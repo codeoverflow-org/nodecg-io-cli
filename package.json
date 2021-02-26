@@ -1,0 +1,31 @@
+{
+  "name": "nodecg-io-cli",
+  "version": "0.1.0",
+  "description": "",
+  "main": "build/index.js",
+  "scripts": {
+    "build": "tsc -b",
+    "run": "tsc -b && node build/index.js",
+    "watch": "tsc -b -w"
+  },
+  "bin": {
+    "nodecg-io": "build/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codeoverflow-org/nodecg-io-cli.git"
+  },
+  "keywords": [
+    "nodecg-io"
+  ],
+  "author": "CodeOverflow Team",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/codeoverflow-org/nodecg-io-cli/issues"
+  },
+  "homepage": "https://github.com/codeoverflow-org/nodecg-io-cli#readme",
+  "devDependencies": {
+    "@types/node": "^14.14.31",
+    "typescript": "^4.2.2"
+  }
+}
