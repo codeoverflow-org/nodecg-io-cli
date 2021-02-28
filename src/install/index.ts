@@ -1,27 +1,44 @@
-import { CommandModule } from "yargs";
+import { CommandModule, version } from "yargs";
 import *  as inquirer from "inquirer";
-import { findNodeCGDirectory } from "../utils";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils";
+import { createDevInstall } from "./development";
 
 export const installModule: CommandModule = {
     command: "install",
     describe: "installs nodecg-io",
     handler: async () => {
-        console.log("Installing nodecg-io...");
-        const versionResult = await inquirer.prompt({
-            type: "list",
-            name: "version",
-            message: "Which version do you want to install?",
-            choices: ["development"]
-        });
-        console.log(versionResult);
-
-        const nodecgDir = await findNodeCGDirectory();
-        if(!nodecgDir) {
-            console.error("Couldn't find a nodecg installation. Make sure that you are in the directory of you nodecg installation.");
-            return;
+        try {
+            await install();
+        } catch (err) {
+            console.error(`Error while installing nodecg-io: ${err}`);
         }
-        console.log(`Detected nodecg installation at ${nodecgDir}.`);
-
-        // TODO: download from git, install, bootstrap, compile and add to nodecg config
     },
+}
+
+async function install(): Promise<void> {
+    console.log("Installing nodecg-io...");
+
+    const nodecgDir = await findNodeCGDirectory();
+    if (!nodecgDir) {
+        throw "Couldn't find a nodecg installation. Make sure that you are in the directory of you nodecg installation.";
+    }
+    
+    console.log(`Detected nodecg installation at ${nodecgDir}.`);
+    const nodecgIODir = getNodeCGIODirectory(nodecgDir);
+
+    const { version } = await inquirer.prompt({
+        type: "list",
+        name: "version",
+        message: "Which version do you want to install?",
+        choices: ["development"]
+    });
+    console.log(`Installing nodecg-io version "${version}"...`);
+
+    if (version === "development") {
+        await createDevInstall(nodecgIODir);
+    } else {
+        throw `"${version}" is not a vaild version. Cannot install it.`;
+    }
+
+    // TODO: add to nodecg config.
 }

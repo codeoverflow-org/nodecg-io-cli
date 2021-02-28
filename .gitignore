@@ -1,2 +1,6 @@
+# deps and build js files
 build/
 node_modules/
+
+# nodecg to test features
+nodecg/
