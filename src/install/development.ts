@@ -2,7 +2,7 @@ import * as git from "nodegit";
 import { executeAndStreamOutput } from "../utils";
 import * as fs from "fs/promises";
 
-const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git"
+const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
 export async function createDevInstall(nodecgIODir: string): Promise<void> {
     await cloneGitRepo(nodecgIODir);
@@ -11,10 +11,9 @@ export async function createDevInstall(nodecgIODir: string): Promise<void> {
 }
 
 async function cloneGitRepo(nodecgIODir: string) {
-
-    try { 
+    try {
         const stats = await fs.stat(nodecgIODir);
-        if(stats.isDirectory()) {
+        if (stats.isDirectory()) {
             console.log("nodecg-io git repository is already cloned. Skipping clone.");
             // TODO: pull maybe?
             return; // return and be finished
@@ -35,7 +34,7 @@ async function installNPMDependencies(nodecgIODir: string) {
 
     await executeAndStreamOutput("npm", ["install"], nodecgIODir);
     await executeAndStreamOutput("npm", ["run", "bootstrap"], nodecgIODir);
-    
+
     console.log("Installed npm dependencies and bootstrapped.");
 }
 

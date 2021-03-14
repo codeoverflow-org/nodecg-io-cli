@@ -1,40 +1,50 @@
 {
-  "name": "nodecg-io-cli",
-  "version": "0.1.0",
-  "description": "",
-  "main": "build/index.js",
-  "scripts": {
-    "build": "tsc -b",
-    "run": "tsc -b && node build/index.js",
-    "watch": "tsc -b -w"
-  },
-  "bin": {
-    "nodecg-io": "build/index.js"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/codeoverflow-org/nodecg-io-cli.git"
-  },
-  "keywords": [
-    "nodecg-io"
-  ],
-  "author": "CodeOverflow Team",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/codeoverflow-org/nodecg-io-cli/issues"
-  },
-  "homepage": "https://github.com/codeoverflow-org/nodecg-io-cli#readme",
-  "devDependencies": {
-    "@types/inquirer": "^7.3.1",
-    "@types/node": "^14.14.31",
-    "@types/nodegit": "^0.26.14",
-    "@types/yargs": "^16.0.0",
-    "typescript": "^4.2.2"
-  },
-  "dependencies": {
-    "find-up": "^5.0.0",
-    "inquirer": "^8.0.0",
-    "nodegit": "^0.27.0",
-    "yargs": "^16.2.0"
-  }
+    "name": "nodecg-io-cli",
+    "version": "0.1.0",
+    "description": "The CLI to install and manage nodecg-io installations. Also helps you with nodecg-io related development.",
+    "main": "build/index.js",
+    "scripts": {
+        "build": "tsc -b",
+        "run": "tsc -b && node build/index.js",
+        "watch": "tsc -b -w",
+        "lint": "eslint src --ext ts",
+        "format": "prettier --write \"./**/*.{ts,json}\"",
+        "format-pre-commit": "pretty-quick --staged --pattern '*/**/*.{ts,json}'",
+        "prepare": "husky install"
+    },
+    "bin": {
+        "nodecg-io": "build/index.js"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/codeoverflow-org/nodecg-io-cli.git"
+    },
+    "keywords": [
+        "nodecg-io"
+    ],
+    "author": "CodeOverflow Team",
+    "license": "MIT",
+    "bugs": {
+        "url": "https://github.com/codeoverflow-org/nodecg-io-cli/issues"
+    },
+    "homepage": "https://github.com/codeoverflow-org/nodecg-io-cli#readme",
+    "devDependencies": {
+        "@types/inquirer": "^7.3.1",
+        "@types/node": "^14.14.31",
+        "@types/nodegit": "^0.26.14",
+        "@types/yargs": "^16.0.0",
+        "@typescript-eslint/eslint-plugin": "^4.17.0",
+        "@typescript-eslint/parser": "^4.17.0",
+        "eslint": "^7.21.0",
+        "husky": "^5.1.3",
+        "prettier": "^2.2.1",
+        "pretty-quick": "^3.1.0",
+        "typescript": "^4.2.2"
+    },
+    "dependencies": {
+        "find-up": "^5.0.0",
+        "inquirer": "^8.0.0",
+        "nodegit": "^0.27.0",
+        "yargs": "^16.2.0"
+    }
 }

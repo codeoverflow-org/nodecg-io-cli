@@ -1,13 +1,13 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import * as findUp from "find-up"
-import { exec, spawn } from "child_process";
+import * as findUp from "find-up";
+import { spawn } from "child_process";
 
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
 export async function findNodeCGDirectory(): Promise<string | undefined> {
-    return await findUp(async (dir) => (await isNodeCGDirectory(dir)) ? dir : undefined, {type: "directory"})
+    return await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), { type: "directory" });
 }
 
 /**
@@ -24,7 +24,7 @@ export function getNodeCGIODirectory(nodecgDir: string): string {
  */
 async function isNodeCGDirectory(dir: string): Promise<boolean> {
     const packageJsonPath = path.join(dir, "package.json");
-    
+
     try {
         await fs.access(packageJsonPath); // no exception => accessable
     } catch (err) {
@@ -40,8 +40,8 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
 export function executeAndStreamOutput(command: string, args: string[], workingDir?: string): Promise<number | null> {
     console.log(`>>> ${command} ${args.join(" ")}`);
 
-    const child = spawn(command, args, {cwd: workingDir});
-    
+    const child = spawn(command, args, { cwd: workingDir });
+
     // Streams output to stdout/stderr of this process.
     child.stdout.pipe(process.stdout);
     child.stderr.pipe(process.stderr);
@@ -52,5 +52,5 @@ export function executeAndStreamOutput(command: string, args: string[], workingD
             console.log();
             resolve(code);
         });
-    })
+    });
 }
