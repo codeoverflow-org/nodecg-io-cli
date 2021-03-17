@@ -3,6 +3,9 @@ import * as path from "path";
 import * as findUp from "find-up";
 import { spawn } from "child_process";
 
+export const corePackage = "nodecg-io-core";
+export const developmentVersion = "development";
+
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
