@@ -53,23 +53,35 @@ async function writeNodeCGConfig(nodecgDir: string, config: NodeCGConfig): Promi
 }
 
 /**
- * Ensures that the given bundle directory is contained in the nodecg config of the passed dir.
- * If it is not already in the config it will be added.
+ * Ensures that the given bundle directory is contained depending on the include parameter in the nodecg config of the passed dir.
+ * If include is true and the directory is not in the config it will be added.
+ * If include is false and the directory is in the config it will be removed.
+ * Otherwise nothing happens.
  * @param nodecgDir the directory of the nodecg installation.
- * @param bundleDir the bundle dir which should be added to the config, if it isn't already.
+ * @param bundleDir the bundle dir which should be added/removed from the config, if it isn't already.
+ * @param include whether the bundle should be in the config or not after executing this function.
  */
-export async function ensureConfigContainsBundleDir(nodecgDir: string, bundleDir: string): Promise<void> {
+export async function manageBundleDir(nodecgDir: string, bundleDir: string, include: boolean): Promise<void> {
     const config = (await readNodeCGConfig(nodecgDir)) ?? {};
     if (!config.bundles) {
         config.bundles = {};
     }
 
     const paths = config.bundles.paths ?? [];
-    if (paths.includes(bundleDir)) {
-        return; // Bundle dir is already included in the config, we don't need to add it.
+    if (include === paths.includes(bundleDir)) {
+        return; // Bundle dir is already in wanted state. (included if we want to include it or excluded if we want to exclude it).
     }
 
-    config.bundles.paths = paths.concat(bundleDir);
+    if (include) {
+        config.bundles.paths = paths.concat(bundleDir);
+    } else {
+        config.bundles.paths = paths.filter((d) => d !== bundleDir);
+    }
     await writeNodeCGConfig(nodecgDir, config);
-    console.log(`Added bundle dir "${bundleDir}" to your nodecg config.`);
+
+    if (include) {
+        console.log(`Added bundle dir "${bundleDir}" to your nodecg config.`);
+    } else {
+        console.log(`Removed bundle dir "${bundleDir}" from your nodecg config.`);
+    }
 }

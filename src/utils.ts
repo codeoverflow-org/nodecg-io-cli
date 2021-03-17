@@ -37,6 +37,7 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
     return packageName === "nodecg";
 }
 
+// TODO: maybe use execa
 export function executeAndStreamOutput(command: string, args: string[], workingDir?: string): Promise<number | null> {
     console.log(`>>> ${command} ${args.join(" ")}`);
 
@@ -50,7 +51,11 @@ export function executeAndStreamOutput(command: string, args: string[], workingD
         child.addListener("error", (err) => reject(err));
         child.addListener("exit", (code) => {
             console.log();
-            resolve(code);
+            if (code !== 0) {
+                reject(`Command "${command} ${args.join()}" returned error code ${code}!`);
+            } else {
+                resolve(code);
+            }
         });
     });
 }

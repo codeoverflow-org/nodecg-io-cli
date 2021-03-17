@@ -1,8 +1,10 @@
 import { CommandModule } from "yargs";
-import * as inquirer from "inquirer";
+import * as path from "path";
 import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils";
 import { createDevInstall } from "./development";
-import { ensureConfigContainsBundleDir } from "../nodecgConfig";
+import { manageBundleDir } from "../nodecgConfig";
+import { promptForInstallInfo } from "./prompt";
+import { writeInstallInfo } from "../installation";
 
 export const installModule: CommandModule = {
     command: "install",
@@ -27,21 +29,19 @@ async function install(): Promise<void> {
     console.log(`Detected nodecg installation at ${nodecgDir}.`);
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
-    const { version } = await inquirer.prompt({
-        type: "list",
-        name: "version",
-        message: "Which version do you want to install?",
-        choices: ["development"],
-    });
-    console.log(`Installing nodecg-io version "${version}"...`);
+    const info = await promptForInstallInfo();
+    console.log(`Installing nodecg-io version "${info.version}"...`);
 
     // Get packages
-    if (version === "development") {
+    if (info.dev) {
         await createDevInstall(nodecgIODir);
     } else {
-        throw `"${version}" is not a vaild version. Cannot install it.`;
+        throw `"${info.version}" is not a vaild version. Cannot install it.`;
     }
 
-    // Add dir to the nodecg config, so that it is loaded.
-    await ensureConfigContainsBundleDir(nodecgDir, nodecgIODir);
+    // Add bundle dirs to the nodecg config, so that it is loaded.
+    await manageBundleDir(nodecgDir, nodecgIODir, true);
+    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "samples"), info.dev && info.useSamples);
+
+    await writeInstallInfo(nodecgIODir, info);
 }
