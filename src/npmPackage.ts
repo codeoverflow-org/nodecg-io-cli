@@ -1,7 +1,14 @@
 import axios from "axios";
 import * as semver from "semver";
+import * as fs from "fs";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
+
+export interface NpmPackage {
+    name: string;
+    path: string;
+    version: string;
+}
 
 /**
  * Gets all version for the passed package that are available at the official npm registry.
@@ -38,4 +45,32 @@ export async function getMinorVersions(packageName: string): Promise<string[]> {
 export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<string | null> {
     const allVersions = await getPackageVersions(packageName);
     return semver.maxSatisfying(allVersions, "~" + majorMinor);
+}
+
+function buildNpmPackageURL(pkg: NpmPackage): string {
+    return `${npmRegistryEndpoint}${pkg.name}/-/${pkg.name}-${pkg.version}.tgz`;
+}
+
+/**
+ * Fetches the tarball of the passed package to the passed destination.
+ * @param pkg the package to fetch
+ * @param targetFile where the tarball of the pckage should be downloaded
+ */
+export async function fetchNpmPackage(pkg: NpmPackage, targetFile: fs.PathLike): Promise<void> {
+    // TODO: properly handle npm server failures
+    const response = await axios({
+        url: buildNpmPackageURL(pkg),
+        method: "GET",
+        responseType: "stream",
+    });
+
+    // Stream response to fs which will write it to disk.
+    const writer = fs.createWriteStream(targetFile);
+    response.data.pipe(writer);
+
+    await new Promise((resolve, reject) => {
+        response.data.on("end", resolve);
+        response.data.on("error", reject);
+    });
+    writer.close();
 }

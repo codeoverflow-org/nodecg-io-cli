@@ -34,7 +34,7 @@ async function install(): Promise<void> {
 
     // Get packages
     if (info.dev) {
-        await createDevInstall(nodecgIODir);
+        await createDevInstall(info, nodecgIODir);
     } else {
         throw `"${info.version}" is not a vaild version. Cannot install it.`;
     }

@@ -1,5 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
+import { NpmPackage } from "./npmPackage";
 
 /**
  * Information about a install of nodecg-io. Includes things like version, etc.
@@ -21,13 +22,7 @@ export interface DevelopmentInstallation {
 export interface ProductionInstallation {
     dev: false;
     version: string;
-    packages: InstalledPackage[];
-}
-
-export interface InstalledPackage {
-    name: string;
-    path: string;
-    version: string;
+    packages: NpmPackage[];
 }
 
 function createPath(nodecgIODir: string) {

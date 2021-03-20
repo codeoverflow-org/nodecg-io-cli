@@ -1,10 +1,11 @@
 import * as git from "nodegit";
 import { executeAndStreamOutput } from "../utils";
 import * as fs from "fs/promises";
+import { DevelopmentInstallation } from "../installation";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
-export async function createDevInstall(nodecgIODir: string): Promise<void> {
+export async function createDevInstall(_info: DevelopmentInstallation, nodecgIODir: string): Promise<void> {
     await cloneGitRepo(nodecgIODir);
     await installNPMDependencies(nodecgIODir);
     await buildTypeScript(nodecgIODir);
