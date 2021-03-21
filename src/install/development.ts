@@ -1,5 +1,5 @@
 import * as git from "nodegit";
-import { executeAndStreamOutput } from "../utils";
+import { executeCommand } from "../utils";
 import * as fs from "fs/promises";
 import { DevelopmentInstallation } from "../installation";
 
@@ -33,14 +33,14 @@ async function cloneGitRepo(nodecgIODir: string) {
 async function installNPMDependencies(nodecgIODir: string) {
     console.log("Installing npm dependencies and bootstrapping...");
 
-    await executeAndStreamOutput("npm", ["install"], nodecgIODir);
-    await executeAndStreamOutput("npm", ["run", "bootstrap"], nodecgIODir);
+    await executeCommand("npm", ["install"], true, nodecgIODir);
+    await executeCommand("npm", ["run", "bootstrap"], true, nodecgIODir);
 
     console.log("Installed npm dependencies and bootstrapped.");
 }
 
 async function buildTypeScript(nodecgIODir: string) {
     console.log("Compiling nodecg-io...");
-    await executeAndStreamOutput("npm", ["run", "build"], nodecgIODir);
+    await executeCommand("npm", ["run", "build"], true, nodecgIODir);
     console.log("Compiled nodecg-io.");
 }

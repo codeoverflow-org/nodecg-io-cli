@@ -41,14 +41,22 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
 }
 
 // TODO: maybe use execa
-export function executeAndStreamOutput(command: string, args: string[], workingDir?: string): Promise<number | null> {
-    console.log(`>>> ${command} ${args.join(" ")}`);
+// TODO: show in which directory the command is executed.
+export function executeCommand(
+    command: string,
+    args: string[],
+    streamOutput: boolean,
+    workingDir?: string,
+): Promise<number | null> {
+    if (streamOutput) console.log(`>>> ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, { cwd: workingDir });
 
-    // Streams output to stdout/stderr of this process.
-    child.stdout.pipe(process.stdout);
-    child.stderr.pipe(process.stderr);
+    if (streamOutput) {
+        // Streams output to stdout/stderr of this process.
+        child.stdout.pipe(process.stdout);
+        child.stderr.pipe(process.stderr);
+    }
 
     return new Promise((resolve, reject) => {
         child.addListener("error", (err) => reject(err));

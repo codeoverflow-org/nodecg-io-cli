@@ -1,6 +1,9 @@
 import axios from "axios";
 import * as semver from "semver";
 import * as fs from "fs";
+import gunzip = require("gunzip-maybe");
+import tar = require("tar-fs");
+import { executeCommand } from "./utils";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
 
@@ -51,6 +54,13 @@ function buildNpmPackageURL(pkg: NpmPackage): string {
     return `${npmRegistryEndpoint}${pkg.name}/-/${pkg.name}-${pkg.version}.tgz`;
 }
 
+function waitForStream(stream: fs.ReadStream): Promise<void> {
+    return new Promise((resolve, reject) => {
+        stream.on("end", resolve);
+        stream.on("error", reject);
+    });
+}
+
 /**
  * Fetches the tarball of the passed package to the passed destination.
  * @param pkg the package to fetch
@@ -68,9 +78,25 @@ export async function fetchNpmPackage(pkg: NpmPackage, targetFile: fs.PathLike):
     const writer = fs.createWriteStream(targetFile);
     response.data.pipe(writer);
 
-    await new Promise((resolve, reject) => {
-        response.data.on("end", resolve);
-        response.data.on("error", reject);
-    });
+    await waitForStream(response.data);
     writer.close();
+}
+
+export async function extractNpmPackageTar(pkg: NpmPackage, tarFile: fs.PathLike): Promise<void> {
+    const readStream = fs.createReadStream(tarFile);
+    readStream.pipe(gunzip()).pipe(
+        tar.extract(pkg.path, {
+            map: (header) => {
+                header.name = header.name.replace("package/", "");
+                return header;
+            },
+        }),
+    );
+
+    await waitForStream(readStream);
+}
+
+export async function installNpmDependencies(pkg: NpmPackage): Promise<void> {
+    // TODO: handle when npm is not installed.
+    await executeCommand("npm", ["install", "--prod"], false, pkg.path);
 }

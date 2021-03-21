@@ -5,6 +5,7 @@ import { createDevInstall } from "./development";
 import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
 import { writeInstallInfo } from "../installation";
+import { createProductionInstall } from "./production";
 
 export const installModule: CommandModule = {
     command: "install",
@@ -19,6 +20,7 @@ export const installModule: CommandModule = {
 };
 
 async function install(): Promise<void> {
+    // TODO: read install.json and set defaults to these settings. Only install if there are any changes and remove nodecg-io directory before installing.
     console.log("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
@@ -36,7 +38,25 @@ async function install(): Promise<void> {
     if (info.dev) {
         await createDevInstall(info, nodecgIODir);
     } else {
-        throw `"${info.version}" is not a vaild version. Cannot install it.`;
+        // TODO: this is temporary, resolve package versions and ask which services to install.
+        info.packages = [
+            {
+                name: "nodecg-io-core",
+                path: path.join(nodecgIODir, "nodecg-io-core"),
+                version: "0.1.0",
+            },
+            {
+                name: "nodecg-io-dashboard",
+                path: path.join(nodecgIODir, "nodecg-io-core/dashboard"),
+                version: "0.1.0",
+            },
+            {
+                name: "nodecg-io-twitch-chat",
+                path: path.join(nodecgIODir, "nodecg-io-twitch-chat"),
+                version: "0.1.0",
+            },
+        ];
+        createProductionInstall(info, nodecgIODir);
     }
 
     // Add bundle dirs to the nodecg config, so that it is loaded.
