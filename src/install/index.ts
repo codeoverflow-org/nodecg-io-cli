@@ -38,24 +38,6 @@ async function install(): Promise<void> {
     if (info.dev) {
         await createDevInstall(info, nodecgIODir);
     } else {
-        // TODO: this is temporary, resolve package versions and ask which services to install.
-        info.packages = [
-            {
-                name: "nodecg-io-core",
-                path: path.join(nodecgIODir, "nodecg-io-core"),
-                version: "0.1.0",
-            },
-            {
-                name: "nodecg-io-dashboard",
-                path: path.join(nodecgIODir, "nodecg-io-core/dashboard"),
-                version: "0.1.0",
-            },
-            {
-                name: "nodecg-io-twitch-chat",
-                path: path.join(nodecgIODir, "nodecg-io-twitch-chat"),
-                version: "0.1.0",
-            },
-        ];
         createProductionInstall(info, nodecgIODir);
     }
 

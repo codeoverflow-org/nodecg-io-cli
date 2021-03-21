@@ -9,8 +9,10 @@ temp.track();
 export async function createProductionInstall(info: ProductionInstallation, nodecgIODir: string): Promise<void> {
     // TODO: (maybe) detect changes in installation request and only remove/add changed packages instead of reinstalling everything
     await ensureNodecgIODirExists(nodecgIODir);
+    console.log(`Installing ${info.packages.length} packages...`);
     // TODO: add progress bar, this takes a while due to "npm install"
     await Promise.all(info.packages.map(processPackage));
+    console.log(`Installed ${info.packages.length} packages.`);
 }
 
 async function ensureNodecgIODirExists(nodecgIODir: string): Promise<void> {

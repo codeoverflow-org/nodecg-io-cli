@@ -4,6 +4,7 @@ import * as findUp from "find-up";
 import { spawn } from "child_process";
 
 export const corePackage = "nodecg-io-core";
+export const dashboardPackage = "nodecg-io-dashboard";
 export const developmentVersion = "development";
 
 /**
@@ -61,7 +62,8 @@ export function executeCommand(
     return new Promise((resolve, reject) => {
         child.addListener("error", (err) => reject(err));
         child.addListener("exit", (code) => {
-            console.log();
+            if (streamOutput) console.log();
+
             if (code !== 0) {
                 reject(`Command "${command} ${args.join()}" returned error code ${code}!`);
             } else {
