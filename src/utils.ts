@@ -43,12 +43,22 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
 
 // TODO: maybe use execa
 // TODO: show in which directory the command is executed.
-export function executeCommand(
+
+/**
+ * Executes the given command and optinally streams the output to the console.
+ * @param command the command that should be executed.
+ * @param args the args which will be passed to the command
+ * @param streamOutput whether the output (stdout and stderr) should be streamed to the ones of the current process.
+ *                     if there was an error stderr will always be written to the stderr of this process after the command has finished and failed.
+ * @param workingDir in which directory the command should be executed
+ * @return a promise which will be resolved if the command exited with a non-zero exit code and rejected otherwise.
+ */
+export async function executeCommand(
     command: string,
     args: string[],
     streamOutput: boolean,
     workingDir?: string,
-): Promise<number | null> {
+): Promise<void> {
     if (streamOutput) console.log(`>>> ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, { cwd: workingDir });
@@ -61,13 +71,19 @@ export function executeCommand(
 
     return new Promise((resolve, reject) => {
         child.addListener("error", (err) => reject(err));
+
         child.addListener("exit", (code) => {
             if (streamOutput) console.log();
 
-            if (code !== 0) {
-                reject(`Command "${command} ${args.join()}" returned error code ${code}!`);
+            if (code === 0) {
+                resolve();
             } else {
-                resolve(code);
+                // There was an error so we should present hte user with the error message even if the output of this command
+                // should not be streamed normally, because hte user needs it to be able to debug the problem.
+                if (!streamOutput) {
+                    child.stderr.pipe(process.stderr);
+                }
+                reject(`Command "${command} ${args.join(" ")}" returned error code ${code}!`);
             }
         });
     });

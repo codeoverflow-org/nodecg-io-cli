@@ -14,7 +14,9 @@ export const installModule: CommandModule = {
         try {
             await install();
         } catch (err) {
+            console.log();
             console.error(`Error while installing nodecg-io: ${err}`);
+            process.exit(1);
         }
     },
 };
@@ -38,7 +40,7 @@ async function install(): Promise<void> {
     if (info.dev) {
         await createDevInstall(info, nodecgIODir);
     } else {
-        createProductionInstall(info, nodecgIODir);
+        await createProductionInstall(info, nodecgIODir);
     }
 
     // Add bundle dirs to the nodecg config, so that it is loaded.

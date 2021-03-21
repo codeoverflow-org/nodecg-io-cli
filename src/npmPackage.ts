@@ -1,6 +1,7 @@
 import axios from "axios";
 import * as semver from "semver";
 import * as fs from "fs";
+import * as path from "path";
 import gunzip = require("gunzip-maybe");
 import tar = require("tar-fs");
 import { executeCommand } from "./utils";
@@ -82,21 +83,25 @@ export async function fetchNpmPackage(pkg: NpmPackage, targetFile: fs.PathLike):
     writer.close();
 }
 
-export async function extractNpmPackageTar(pkg: NpmPackage, tarFile: fs.PathLike): Promise<void> {
-    const readStream = fs.createReadStream(tarFile);
-    readStream.pipe(gunzip()).pipe(
-        tar.extract(pkg.path, {
-            map: (header) => {
-                header.name = header.name.replace("package/", "");
-                return header;
-            },
-        }),
-    );
+export async function extractNpmPackageTar(pkg: NpmPackage, tarFile: fs.PathLike, nodecgIODir: string): Promise<void> {
+    const extractStream = fs
+        .createReadStream(tarFile)
+        .pipe(gunzip())
+        .pipe(
+            tar.extract(path.join(nodecgIODir, pkg.path), {
+                map: (header) => {
+                    // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
+                    // named package in each downloaded package directory.
+                    header.name = header.name.replace("package/", ""); // FIXME: doesn't allow files to have "package/" inside their name, lol
+                    return header;
+                },
+            }),
+        );
 
-    await waitForStream(readStream);
+    await new Promise((res) => extractStream.on("finish", res));
 }
 
-export async function installNpmDependencies(pkg: NpmPackage): Promise<void> {
+export async function installNpmDependencies(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     // TODO: handle when npm is not installed.
-    await executeCommand("npm", ["install", "--prod"], false, pkg.path);
+    await executeCommand("npm", ["install", "--prod"], false, path.join(nodecgIODir, pkg.path));
 }

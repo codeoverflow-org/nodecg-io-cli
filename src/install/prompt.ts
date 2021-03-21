@@ -60,7 +60,7 @@ export async function promptForInstallInfo(): Promise<Installation> {
         {
             type: "checkbox",
             name: "services",
-            message: "Which service do you want to use?",
+            message: "Which services do you want to use?",
             choices: version01Services,
             when: (x) => x.version !== developmentVersion,
         },
