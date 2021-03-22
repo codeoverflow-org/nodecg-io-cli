@@ -4,38 +4,12 @@ import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npmPack
 import { corePackage, dashboardPackage, developmentVersion } from "../utils";
 
 const corePackages = [corePackage, dashboardPackage];
+// prettier-ignore
 const version01Services = [
-    "ahk",
-    "android",
-    "curseforge",
-    "discord",
-    "intellij",
-    "irc",
-    "midi-input",
-    "midi-output",
-    "nanoleaf",
-    "obs",
-    "philipshue",
-    "rcon",
-    "reddit",
-    "sacn-receiver",
-    "sacn-sender",
-    "serial",
-    "slack",
-    "spotify",
-    "streamdeck",
-    "streamelements",
-    "telegram",
-    "tiane",
-    "twitch-addons",
-    "twitch-api",
-    "twitch-chat",
-    "twitch-pubsub",
-    "twitter",
-    "websocket-client",
-    "websocket-server",
-    "xdotool",
-    "youtube",
+    "ahk", "android", "curseforge", "discord", "intellij", "irc", "midi-input", "midi-output", "nanoleaf", "obs",
+    "philipshue", "rcon", "reddit", "sacn-receiver", "sacn-sender", "serial", "slack", "spotify", "streamdeck",
+    "streamelements", "telegram", "tiane", "twitch-addons", "twitch-api", "twitch-chat", "twitch-pubsub",
+    "twitter", "websocket-client", "websocket-server", "xdotool", "youtube",
 ];
 
 export async function promptForInstallInfo(): Promise<Installation> {

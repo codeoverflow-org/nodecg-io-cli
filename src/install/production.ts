@@ -3,6 +3,8 @@ import * as temp from "temp";
 import { extractNpmPackageTar, fetchNpmPackage, installNpmDependencies, NpmPackage } from "../npmPackage";
 import * as fs from "fs/promises";
 import { SingleBar } from "cli-progress";
+import pLimit = require("p-limit");
+import * as os from "os";
 
 // Delete temporarily downloaded packages when exiting the CLI.
 temp.track();
@@ -22,13 +24,16 @@ export async function createProductionInstall(info: ProductionInstallation, node
         progressBar.start(count, 0);
 
         // TODO: maybe show the packages that are still being installed
-        // TODO: limit concurrency of npm install processes
-        await Promise.all(
-            info.packages.map(async (pkg) => {
+        // TODO: make concurrency limit configurable using a cli opt.
+        const limit = pLimit(Math.max(1, os.cpus().length / 2));
+        const limitedPromises = info.packages.map((pkg) =>
+            limit(async () => {
                 await processPackage(pkg, nodecgIODir);
                 progressBar.increment();
             }),
         );
+
+        await Promise.all(limitedPromises);
     } finally {
         // We must make sure to stop the progress bar because otherwise we'll write at the end of the line of the bar.
         progressBar.stop();
