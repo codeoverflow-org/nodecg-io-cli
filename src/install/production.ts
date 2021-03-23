@@ -16,20 +16,28 @@ export async function createProductionInstall(info: ProductionInstallation, node
     const count = info.packages.length;
     console.log(`Installing ${count} packages (this might take a while)...`);
 
+    let currentlyInstalling: string[] = [];
     const progressBar = new SingleBar({
-        format: "Finished {value}/{total} packages [{bar}] {percentage}%",
+        format: "Finished {value}/{total} packages [{bar}] {percentage}% {currentlyInstalling}",
     });
+
+    // TODO: can we speed this up? It is kinda slow. Maybe add all dependencies into a package.json in the nodecg-io root
+    // TODO: split this into more and smaller functions.
 
     try {
         progressBar.start(count, 0);
 
-        // TODO: maybe show the packages that are still being installed
         // TODO: make concurrency limit configurable using a cli opt.
         const limit = pLimit(Math.max(1, os.cpus().length / 2));
         const limitedPromises = info.packages.map((pkg) =>
             limit(async () => {
+                currentlyInstalling = currentlyInstalling.concat(pkg.name);
+                progressBar.increment(0, { currentlyInstalling: currentlyInstalling.join(", ") });
+
                 await processPackage(pkg, nodecgIODir);
-                progressBar.increment();
+
+                currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.name);
+                progressBar.increment(1, { currentlyInstalling: currentlyInstalling.join(", ") });
             }),
         );
 
