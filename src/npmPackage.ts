@@ -55,19 +55,11 @@ function buildNpmPackageURL(pkg: NpmPackage): string {
     return `${npmRegistryEndpoint}${pkg.name}/-/${pkg.name}-${pkg.version}.tgz`;
 }
 
-function waitForStream(stream: fs.ReadStream): Promise<void> {
-    return new Promise((resolve, reject) => {
-        stream.on("end", resolve);
-        stream.on("error", reject);
-    });
-}
-
 /**
- * Fetches the tarball of the passed package to the passed destination.
+ * Creates a read stream that will be fed the tarball of the passed package directly from the official npm registry.
  * @param pkg the package to fetch
- * @param targetFile where the tarball of the pckage should be downloaded
  */
-export async function fetchNpmPackage(pkg: NpmPackage, targetFile: fs.PathLike): Promise<void> {
+export async function createNpmPackageReadStream(pkg: NpmPackage): Promise<fs.ReadStream> {
     // TODO: properly handle npm server failures
     const response = await axios({
         url: buildNpmPackageURL(pkg),
@@ -75,31 +67,27 @@ export async function fetchNpmPackage(pkg: NpmPackage, targetFile: fs.PathLike):
         responseType: "stream",
     });
 
-    // Stream response to fs which will write it to disk.
-    const writer = fs.createWriteStream(targetFile);
-    response.data.pipe(writer);
-
-    await waitForStream(response.data);
-    writer.close();
+    return response.data;
 }
 
-export async function extractNpmPackageTar(pkg: NpmPackage, tarFile: fs.PathLike, nodecgIODir: string): Promise<void> {
-    const extractStream = fs
-        .createReadStream(tarFile)
-        .pipe(gunzip())
-        .pipe(
-            tar.extract(path.join(nodecgIODir, pkg.path), {
-                map: (header) => {
-                    // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
-                    // named package in each downloaded package directory.
-                    if (header.name.startsWith("package/")) {
-                        header.name = path.join("package/", header.name);
-                    }
+export async function extractNpmPackageTar(
+    pkg: NpmPackage,
+    tarStream: fs.ReadStream,
+    nodecgIODir: string,
+): Promise<void> {
+    const extractStream = tarStream.pipe(gunzip()).pipe(
+        tar.extract(path.join(nodecgIODir, pkg.path), {
+            map: (header) => {
+                // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
+                // named package in each downloaded package directory.
+                if (header.name.startsWith("package/")) {
+                    header.name = path.relative("package/", header.name);
+                }
 
-                    return header;
-                },
-            }),
-        );
+                return header;
+            },
+        }),
+    );
 
     await new Promise((res) => extractStream.on("finish", res));
 }

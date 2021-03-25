@@ -1,13 +1,9 @@
 import { ProductionInstallation } from "../installation";
-import * as temp from "temp";
-import { extractNpmPackageTar, fetchNpmPackage, installNpmDependencies, NpmPackage } from "../npmPackage";
+import { extractNpmPackageTar, createNpmPackageReadStream, installNpmDependencies, NpmPackage } from "../npmPackage";
 import * as fs from "fs/promises";
 import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
 import * as os from "os";
-
-// Delete temporarily downloaded packages when exiting the CLI.
-temp.track();
 
 export async function createProductionInstall(info: ProductionInstallation, nodecgIODir: string): Promise<void> {
     // TODO: (maybe) detect changes in installation request and only remove/add changed packages instead of reinstalling everything
@@ -28,6 +24,8 @@ export async function createProductionInstall(info: ProductionInstallation, node
         progressBar.start(count, 0);
 
         // TODO: make concurrency limit configurable using a cli opt.
+        // TODO: show only service/component name in progress bar without the nodecg-io prefix
+        // all of those are nodecg-io components to that is redudant and makes the list unneccesarily long.
         const limit = pLimit(Math.max(1, os.cpus().length / 2));
         const limitedPromises = info.packages.map((pkg) =>
             limit(async () => {
@@ -59,23 +57,7 @@ async function ensureNodecgIODirExists(nodecgIODir: string): Promise<void> {
 }
 
 async function processPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    const tarPath = await fetchPackage(pkg);
-    await extractNpmPackageTar(pkg, tarPath, nodecgIODir);
+    const tarStream = await createNpmPackageReadStream(pkg);
+    await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
     await installNpmDependencies(pkg, nodecgIODir);
-}
-
-async function fetchPackage(pkg: NpmPackage): Promise<string> {
-    // Stream from axios to gunzip/untar directly to get rid of these temp files
-    const file = await createTempPackageFile(pkg);
-    await fetchNpmPackage(pkg, file.path);
-    return file.path;
-}
-
-async function createTempPackageFile(pkg: NpmPackage): Promise<temp.OpenFile> {
-    return new Promise((resolve, reject) => {
-        temp.open(`nodecg-io-cli-pkg-${pkg.name}-${pkg.version}`, (err, res) => {
-            if (err) reject(err);
-            else resolve(res);
-        });
-    });
 }
