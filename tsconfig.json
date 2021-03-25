@@ -22,7 +22,7 @@
         "types": ["node"],
 
         "outDir": "build",
-        "rootDir": "src"
+        "resolveJsonModule": true
     },
     "include": ["src/**/*"],
     "compileOnSave": true

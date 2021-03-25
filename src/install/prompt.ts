@@ -2,6 +2,8 @@ import { Installation } from "../installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npmPackage";
 import { corePackage, dashboardPackage, developmentVersion } from "../utils";
+import { version as cliVersion } from "../../package.json";
+import * as semver from "semver";
 
 const corePackages = [corePackage, dashboardPackage];
 // prettier-ignore
@@ -13,16 +15,15 @@ const version01Services = [
 ];
 
 export async function promptForInstallInfo(): Promise<Installation> {
-    // TODO: filter versions that are too new for the installed cli version and show a warning that you would need to update.
-    const releasedVersions = await getMinorVersions(corePackage);
+    const versions = await getInstallableVersions();
     const res = await inquirer.prompt([
         {
             type: "list",
             name: "version",
             message: "Which version do you want to install?",
-            choices: [...releasedVersions, developmentVersion].reverse(),
+            choices: [...versions, developmentVersion].reverse(),
             loop: false,
-            default: releasedVersions.slice(-1)[0],
+            default: versions.slice(-1)[0],
         },
         {
             type: "confirm",
@@ -45,6 +46,30 @@ export async function promptForInstallInfo(): Promise<Installation> {
     } else {
         return { ...res, dev: false, packages: await buildPackageList(res.version, res.services) };
     }
+}
+
+async function getInstallableVersions(): Promise<string[]> {
+    const all = await getMinorVersions(corePackage);
+    const { major, minor } = new semver.SemVer(cliVersion);
+    const range = new semver.Range(`<=${major}.${minor}`);
+
+    const notInstallableVersions: string[] = [];
+
+    const filtered = all.filter((v) => {
+        if (semver.satisfies(`${v}.0`, range)) {
+            return true;
+        } else {
+            notInstallableVersions.push(v);
+            return false;
+        }
+    });
+
+    if (notInstallableVersions.length) {
+        // TODO: direct user to update cli?
+        const versionList = notInstallableVersions.join(", ");
+        console.log(`Cannot install the following versions because the cli doesn't support them yet: ${versionList}`);
+    }
+    return filtered;
 }
 
 async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {

@@ -13,7 +13,7 @@
         "prepare": "husky install"
     },
     "bin": {
-        "nodecg-io": "build/index.js"
+        "nodecg-io": "index.js"
     },
     "repository": {
         "type": "git",
