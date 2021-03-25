@@ -92,7 +92,10 @@ export async function extractNpmPackageTar(pkg: NpmPackage, tarFile: fs.PathLike
                 map: (header) => {
                     // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
                     // named package in each downloaded package directory.
-                    header.name = header.name.replace("package/", ""); // FIXME: doesn't allow files to have "package/" inside their name, lol
+                    if (header.name.startsWith("package/")) {
+                        header.name = path.join("package/", header.name);
+                    }
+
                     return header;
                 },
             }),
