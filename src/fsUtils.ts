@@ -15,13 +15,6 @@ export async function findNodeCGDirectory(): Promise<string | undefined> {
 }
 
 /**
- * Builds the path where the nodecg-io directory should be located. It is not checked whether it exists or not!
- */
-export function getNodeCGIODirectory(nodecgDir: string): string {
-    return path.join(nodecgDir, "nodecg-io");
-}
-
-/**
  * Checks whether a nodecg installation is in the passed directory.
  * It currently does this by checking for a package.json which must contain the name "nodecg"
  * @param dir the directory which may contain the nodecg installation
@@ -29,16 +22,45 @@ export function getNodeCGIODirectory(nodecgDir: string): string {
 async function isNodeCGDirectory(dir: string): Promise<boolean> {
     const packageJsonPath = path.join(dir, "package.json");
 
-    try {
-        await fs.access(packageJsonPath); // no exception => accessable
-    } catch (err) {
-        return false; // User can't access this file/directory
-    }
+    if ((await directoryExists(dir)) === false) return false;
 
     const data = await fs.readFile(packageJsonPath);
     const json = JSON.parse(data.toString());
     const packageName = json["name"];
     return packageName === "nodecg";
+}
+
+/**
+ * Builds the path where the nodecg-io directory should be located. It is not checked whether it exists or not!
+ */
+export function getNodeCGIODirectory(nodecgDir: string): string {
+    return path.join(nodecgDir, "nodecg-io");
+}
+
+/**
+ * Checks whether the specified directory exists or not.
+ * @param dir the directory to check
+ * @returns whether the directory exists or not
+ */
+export async function directoryExists(dir: string): Promise<boolean> {
+    try {
+        const stat = await fs.stat(dir); // check whether directory exists
+        // If it passes above line without error the directory does exist, just need to check that it is a dir and not a file.
+        return stat.isDirectory();
+    } catch (_e) {
+        return false;
+    }
+}
+
+/**
+ * Ensures that teh specified directory exists.
+ * If it is already existing nothing is done and if it doesn't it will be created.
+ * @param dir the directory that should be ensured to exist.
+ */
+export async function ensureDirectory(dir: string): Promise<void> {
+    if ((await directoryExists(dir)) === false) {
+        await fs.mkdir(dir);
+    }
 }
 
 // TODO: maybe use execa

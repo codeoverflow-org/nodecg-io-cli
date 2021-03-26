@@ -1,6 +1,5 @@
 import * as git from "nodegit";
-import { executeCommand } from "../utils";
-import * as fs from "fs/promises";
+import { directoryExists, executeCommand } from "../fsUtils";
 import { DevelopmentInstallation } from "../installation";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
@@ -12,21 +11,14 @@ export async function createDevInstall(_info: DevelopmentInstallation, nodecgIOD
 }
 
 async function cloneGitRepo(nodecgIODir: string) {
-    try {
-        const stats = await fs.stat(nodecgIODir);
-        if (stats.isDirectory()) {
-            console.log("nodecg-io git repository is already cloned. Skipping clone.");
-            // TODO: pull maybe?
-            return; // return and be finished
-        } else {
-            fs.unlink(nodecgIODir); // Actually a file lol, remove it and now clone
-        }
-    } catch (_err) {
-        // Dir doesn't exists, therefore we now clone it
+    if (await directoryExists(nodecgIODir)) {
+        console.log("nodecg-io git repository is already cloned. Skipping clone.");
+        // TODO: pull maybe?
+        return;
     }
 
     console.log("Cloning nodecg-io git repository...");
-    await git.Clone.clone(nodecgIOCloneURL, nodecgIODir);
+    await git.Clone.clone(nodecgIOCloneURL, nodecgIODir); // TODO: this sometimes completely locks up, maybe also add a progress indicator
     console.log("Cloned nodecg-io git repository.");
 }
 

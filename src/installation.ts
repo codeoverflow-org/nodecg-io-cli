@@ -1,6 +1,7 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 import { NpmPackage } from "./npmPackage";
+import { notDeepStrictEqual } from "assert";
 
 /**
  * Information about a install of nodecg-io. Includes things like version, etc.
@@ -51,4 +52,21 @@ export async function readInstallInfo(nodecgIODir: string): Promise<Installation
 export async function writeInstallInfo(nodecgIODir: string, install: Installation): Promise<void> {
     const content = JSON.stringify(install, null, 4);
     await fs.writeFile(createPath(nodecgIODir), content);
+}
+
+/**
+ * Checks whether the passed installations are completely equals (deep equality).
+ * If any of the passed paramters is undefined it will always return false.
+ * @returns true if they are the complete same, false otherwise
+ */
+export function isInstallInfoEquals(a: Installation | undefined, b: Installation | undefined): boolean {
+    // When either one is undefined they cannot be the same (a and b === undefined is counted as not the same)
+    if (a === undefined || b === undefined) return false;
+
+    try {
+        notDeepStrictEqual(a, b);
+        return false;
+    } catch (_e) {
+        return true;
+    }
 }

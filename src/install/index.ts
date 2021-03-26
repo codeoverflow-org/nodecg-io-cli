@@ -1,11 +1,12 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
-import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils";
+import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../fsUtils";
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
-import { writeInstallInfo } from "../installation";
+import { isInstallInfoEquals, readInstallInfo, writeInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
+import * as fs from "fs/promises";
 
 export const installModule: CommandModule = {
     command: "install",
@@ -22,7 +23,6 @@ export const installModule: CommandModule = {
 };
 
 async function install(): Promise<void> {
-    // TODO: read install.json and set defaults to these settings. Only install if there are any changes and remove nodecg-io directory before installing.
     console.log("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
@@ -33,19 +33,36 @@ async function install(): Promise<void> {
     console.log(`Detected nodecg installation at ${nodecgDir}.`);
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
-    const info = await promptForInstallInfo();
-    console.log(`Installing nodecg-io version "${info.version}"...`);
+    const currentInstall = await readInstallInfo(nodecgIODir);
+    const requestedInstall = await promptForInstallInfo();
 
-    // Get packages
-    if (info.dev) {
-        await createDevInstall(info, nodecgIODir);
-    } else {
-        await createProductionInstall(info, nodecgIODir);
+    if (isInstallInfoEquals(currentInstall, requestedInstall)) {
+        console.log("Requested installation is already installed. Not installing.");
+        return;
     }
 
-    // Add bundle dirs to the nodecg config, so that it is loaded.
-    await manageBundleDir(nodecgDir, nodecgIODir, true);
-    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "samples"), info.dev && info.useSamples);
+    // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
+    if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
+        console.log(`Deleting nodecg-io version "${currentInstall.version}"...`);
+        await fs.rm(nodecgIODir, { recursive: true, force: true });
+    }
 
-    await writeInstallInfo(nodecgIODir, info);
+    console.log(`Installing nodecg-io version "${requestedInstall.version}"...`);
+
+    // Get packages
+    if (requestedInstall.dev) {
+        await createDevInstall(requestedInstall, nodecgIODir);
+    } else {
+        await createProductionInstall(requestedInstall, nodecgIODir);
+    }
+
+    // Add bundle dirs to the nodecg config, so that they are loaded.
+    await manageBundleDir(nodecgDir, nodecgIODir, true);
+    await manageBundleDir(
+        nodecgDir,
+        path.join(nodecgIODir, "samples"),
+        requestedInstall.dev && requestedInstall.useSamples,
+    );
+
+    await writeInstallInfo(nodecgIODir, requestedInstall);
 }

@@ -1,13 +1,13 @@
 import { ProductionInstallation } from "../installation";
 import { extractNpmPackageTar, createNpmPackageReadStream, installNpmDependencies, NpmPackage } from "../npmPackage";
-import * as fs from "fs/promises";
 import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
 import * as os from "os";
+import { ensureDirectory } from "../fsUtils";
 
 export async function createProductionInstall(info: ProductionInstallation, nodecgIODir: string): Promise<void> {
     // TODO: (maybe) detect changes in installation request and only remove/add changed packages instead of reinstalling everything
-    await ensureNodecgIODirExists(nodecgIODir);
+    await ensureDirectory(nodecgIODir);
 
     const count = info.packages.length;
     console.log(`Installing ${count} packages (this might take a while)...`);
@@ -46,14 +46,6 @@ export async function createProductionInstall(info: ProductionInstallation, node
     }
 
     console.log(`Installed ${count} packages.`);
-}
-
-async function ensureNodecgIODirExists(nodecgIODir: string): Promise<void> {
-    try {
-        await fs.stat(nodecgIODir); // check whether directory exists
-    } catch (_e) {
-        await fs.mkdir(nodecgIODir);
-    }
 }
 
 async function processPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {

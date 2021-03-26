@@ -1,7 +1,7 @@
 import { Installation } from "../installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npmPackage";
-import { corePackage, dashboardPackage, developmentVersion } from "../utils";
+import { corePackage, dashboardPackage, developmentVersion } from "../fsUtils";
 import { version as cliVersion } from "../../package.json";
 import * as semver from "semver";
 
