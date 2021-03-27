@@ -12,8 +12,15 @@ export async function createDevInstall(_info: DevelopmentInstallation, nodecgIOD
 
 async function cloneGitRepo(nodecgIODir: string) {
     if (await directoryExists(nodecgIODir)) {
-        console.log("nodecg-io git repository is already cloned. Skipping clone.");
-        // TODO: pull maybe?
+        console.log("nodecg-io git repository is already cloned.");
+        console.log("Pulling latest changes...");
+
+        const repo = await git.Repository.open(nodecgIODir);
+        await repo.fetchAll();
+        const branch = await repo.head();
+        await repo.mergeBranches(branch, `origin/${branch.name()}`);
+
+        console.log("Succesfully pulled latest changes form GitHub.");
         return;
     }
 
