@@ -29,7 +29,7 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
         const packageName = json["name"];
         return packageName === "nodecg";
     } catch (_e) {
-        return false; // package.json is propably not existant
+        return false; // package.json is probably not existent
     }
 }
 
@@ -70,7 +70,7 @@ export async function ensureDirectory(dir: string): Promise<void> {
 // TODO: show in which directory the command is executed.
 
 /**
- * Executes the given command and optinally streams the output to the console.
+ * Executes the given command and optionally streams the output to the console.
  * @param command the command that should be executed.
  * @param args the args which will be passed to the command
  * @param streamOutput whether the output (stdout and stderr) should be streamed to the ones of the current process.
@@ -103,8 +103,8 @@ export async function executeCommand(
             if (code === 0) {
                 resolve();
             } else {
-                // There was an error so we should present hte user with the error message even if the output of this command
-                // should not be streamed normally, because hte user needs it to be able to debug the problem.
+                // There was an error so we should present the user with the error message even if the output of this command
+                // should not be streamed normally, because the user needs it to be able to debug the problem.
                 if (!streamOutput) {
                     child.stderr.pipe(process.stderr);
                 }

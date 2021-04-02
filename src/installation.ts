@@ -31,7 +31,7 @@ function createPath(nodecgIODir: string) {
 }
 
 /**
- * Reads the informations about a nodecg-io installation, which is located in the install.json inside the nodecg-io directory.
+ * Reads the information about a nodecg-io installation, which is located in the install.json inside the nodecg-io directory.
  * @param nodecgIODir the directory in which nodecg-io is installed.
  * @returns a {@link Installation} if a install.json was found, undefined otherwise.
  */

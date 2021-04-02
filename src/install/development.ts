@@ -35,7 +35,7 @@ async function pullRepo(nodecgIODir: string): Promise<git.Repository> {
     const branch = await repo.head();
     await repo.mergeBranches(branch, `origin/${branch.shorthand()}`);
 
-    console.log("Succesfully pulled latest changes from GitHub.");
+    console.log("Successfully pulled latest changes from GitHub.");
     return repo;
 }
 
