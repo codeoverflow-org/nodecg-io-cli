@@ -20,14 +20,17 @@ export async function findNodeCGDirectory(): Promise<string | undefined> {
  * @param dir the directory which may contain the nodecg installation
  */
 async function isNodeCGDirectory(dir: string): Promise<boolean> {
-    const packageJsonPath = path.join(dir, "package.json");
-
     if ((await directoryExists(dir)) === false) return false;
 
-    const data = await fs.readFile(packageJsonPath);
-    const json = JSON.parse(data.toString());
-    const packageName = json["name"];
-    return packageName === "nodecg";
+    try {
+        const packageJsonPath = path.join(dir, "package.json");
+        const data = await fs.readFile(packageJsonPath);
+        const json = JSON.parse(data.toString());
+        const packageName = json["name"];
+        return packageName === "nodecg";
+    } catch (_e) {
+        return false; // package.json is propably not existant
+    }
 }
 
 /**
