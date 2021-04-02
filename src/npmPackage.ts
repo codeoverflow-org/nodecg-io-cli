@@ -10,12 +10,13 @@ const npmRegistryEndpoint = "https://registry.npmjs.org/";
 
 export interface NpmPackage {
     name: string;
+    simpleName: string;
     path: string;
     version: string;
 }
 
 export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
-    return a.name === b.name && a.path === b.path && a.version === b.version;
+    return a.name === b.name && a.path === b.path && a.version === b.version && a.simpleName === b.simpleName;
 }
 
 /**

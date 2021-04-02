@@ -34,7 +34,7 @@ async function install(): Promise<void> {
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
     const currentInstall = await readInstallInfo(nodecgIODir);
-    const requestedInstall = await promptForInstallInfo();
+    const requestedInstall = await promptForInstallInfo(currentInstall);
 
     // TODO: can be removed once we have incremental installing in dev and prod.
     if (isInstallInfoEquals(currentInstall, requestedInstall)) {

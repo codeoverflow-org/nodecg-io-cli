@@ -14,9 +14,9 @@ const version01Services = [
     "twitter", "websocket-client", "websocket-server", "xdotool", "youtube",
 ];
 
-export async function promptForInstallInfo(): Promise<Installation> {
-    // TODO: default to options of current installation
+export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
     const versions = await getInstallableVersions();
+
     const res = await inquirer.prompt([
         {
             type: "list",
@@ -24,14 +24,14 @@ export async function promptForInstallInfo(): Promise<Installation> {
             message: "Which version do you want to install?",
             choices: [...versions, developmentVersion].reverse(),
             loop: false,
-            default: versions.slice(-1)[0],
+            default: currentInstall?.version ?? versions.slice(-1)[0],
         },
         {
             type: "confirm",
             name: "useSamples",
             message: "Would you like to use the provided samples?",
             when: (x) => x.version === developmentVersion,
-            default: false,
+            default: currentInstall?.dev && currentInstall.useSamples,
         },
         {
             type: "checkbox",
@@ -39,6 +39,15 @@ export async function promptForInstallInfo(): Promise<Installation> {
             message: "Which services do you want to use?",
             choices: version01Services,
             when: (x) => x.version !== developmentVersion,
+            default: () => {
+                if (currentInstall?.dev) return;
+                // Exclude core packages, they are not selectable and we don't want them here
+                const svcPackages = currentInstall?.packages.filter(
+                    (pkg) => !corePackages.find((corePkg) => pkg.name === corePkg),
+                );
+                // simpleName = service name.
+                return svcPackages?.map((pkg) => pkg.simpleName) ?? [];
+            },
         },
     ]);
 
@@ -76,6 +85,7 @@ async function getInstallableVersions(): Promise<string[]> {
 async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
     const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
         name: pkgName,
+        simpleName: pkgName.replace("nodecg-io-", ""),
         path: pkgName === dashboardPackage ? `${corePackage}/dashboard` : pkgName,
         version: (await getHighestPatchVersion(pkgName, version)) ?? `${version}.0`,
     }));
