@@ -4,7 +4,7 @@ import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../f
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
-import { isInstallInfoEquals, readInstallInfo, writeInstallInfo } from "../installation";
+import { readInstallInfo, writeInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
 import * as fs from "fs/promises";
 
@@ -36,12 +36,6 @@ async function install(): Promise<void> {
     const currentInstall = await readInstallInfo(nodecgIODir);
     const requestedInstall = await promptForInstallInfo(currentInstall);
 
-    // TODO: can be removed once we have incremental installing in dev and prod.
-    if (isInstallInfoEquals(currentInstall, requestedInstall)) {
-        console.log("Requested installation is already installed. Not installing.");
-        return;
-    }
-
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
         console.log(`Deleting nodecg-io version "${currentInstall.version}"...`);
@@ -52,7 +46,11 @@ async function install(): Promise<void> {
 
     // Get packages
     if (requestedInstall.dev) {
-        await createDevInstall(requestedInstall, nodecgIODir);
+        await createDevInstall(
+            requestedInstall,
+            currentInstall && currentInstall.dev ? currentInstall : undefined,
+            nodecgIODir,
+        );
     } else {
         await createProductionInstall(
             requestedInstall,

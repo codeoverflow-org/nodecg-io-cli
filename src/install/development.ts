@@ -5,35 +5,41 @@ import { DevelopmentInstallation } from "../installation";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
-// TODO: save commit hash and only execute bootstrap and build if commit hash has changed after pulling
+export async function createDevInstall(
+    requested: DevelopmentInstallation,
+    current: DevelopmentInstallation | undefined,
+    nodecgIODir: string,
+): Promise<void> {
+    requested.commitHash = await getGitRepo(nodecgIODir);
+    if (requested.commitHash === current?.commitHash) {
+        console.log("Repository was already up to date. Not building nodecg-io.");
+        return;
+    }
 
-export async function createDevInstall(_info: DevelopmentInstallation, nodecgIODir: string): Promise<void> {
-    await getGitRepo(nodecgIODir);
     await installNPMDependencies(nodecgIODir);
     await buildTypeScript(nodecgIODir);
 }
 
-async function getGitRepo(nodecgIODir: string): Promise<void> {
-    if (await directoryExists(nodecgIODir)) {
-        await pullRepo(nodecgIODir);
-    } else {
-        await cloneRepo(nodecgIODir);
-    }
+async function getGitRepo(nodecgIODir: string): Promise<string> {
+    const repo = (await directoryExists(nodecgIODir)) ? await pullRepo(nodecgIODir) : await cloneRepo(nodecgIODir);
+    const headCommit = await repo.getHeadCommit();
+    return headCommit.sha();
 }
 
-async function pullRepo(nodecgIODir: string): Promise<void> {
+async function pullRepo(nodecgIODir: string): Promise<git.Repository> {
     console.log("nodecg-io git repository is already cloned.");
     console.log("Pulling latest changes...");
 
     const repo = await git.Repository.open(nodecgIODir);
     await repo.fetchAll();
     const branch = await repo.head();
-    await repo.mergeBranches(branch, `origin/${branch.name()}`);
+    await repo.mergeBranches(branch, `origin/${branch.shorthand()}`);
 
     console.log("Succesfully pulled latest changes from GitHub.");
+    return repo;
 }
 
-async function cloneRepo(nodecgIODir: string): Promise<void> {
+async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
     console.log("Cloning nodecg-io git repository...");
 
     const bar = new SingleBar({
@@ -41,7 +47,7 @@ async function cloneRepo(nodecgIODir: string): Promise<void> {
     });
     bar.start(0, 0);
 
-    await git.Clone.clone(nodecgIOCloneURL, nodecgIODir, {
+    const repo = await git.Clone.clone(nodecgIOCloneURL, nodecgIODir, {
         fetchOpts: {
             callbacks: {
                 // Wohoooo broken typings....
@@ -56,6 +62,7 @@ async function cloneRepo(nodecgIODir: string): Promise<void> {
 
     bar.stop();
     console.log("Cloned nodecg-io git repository.");
+    return repo;
 }
 
 async function installNPMDependencies(nodecgIODir: string) {
