@@ -14,6 +14,10 @@ export interface NpmPackage {
     version: string;
 }
 
+export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
+    return a.name === b.name && a.path === b.path && a.version === b.version;
+}
+
 /**
  * Gets all version for the passed package that are available at the official npm registry.
  * @param packageName which package you want the versions to.
@@ -95,4 +99,8 @@ export async function extractNpmPackageTar(
 export async function installNpmDependencies(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     // TODO: handle when npm is not installed.
     await executeCommand("npm", ["install", "--prod"], false, path.join(nodecgIODir, pkg.path));
+}
+
+export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
+    await fs.promises.rm(path.join(nodecgIODir, pkg.path), { recursive: true, force: true });
 }

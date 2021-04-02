@@ -1,15 +1,59 @@
 import { ProductionInstallation } from "../installation";
-import { extractNpmPackageTar, createNpmPackageReadStream, installNpmDependencies, NpmPackage } from "../npmPackage";
+import {
+    extractNpmPackageTar,
+    createNpmPackageReadStream,
+    installNpmDependencies,
+    NpmPackage,
+    removeNpmPackage,
+    isPackageEquals,
+} from "../npmPackage";
 import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
 import * as os from "os";
 import { ensureDirectory } from "../fsUtils";
 
-export async function createProductionInstall(info: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function createProductionInstall(
+    requested: ProductionInstallation,
+    current: ProductionInstallation | undefined,
+    nodecgIODir: string,
+): Promise<void> {
     // TODO: (maybe) detect changes in installation request and only remove/add changed packages instead of reinstalling everything
     await ensureDirectory(nodecgIODir);
 
-    const count = info.packages.length;
+    const { pkgRemove, pkgInstall } = diffPackages(requested.packages, current?.packages ?? []);
+
+    if (pkgRemove.length > 0) {
+        await removePackages(pkgRemove, nodecgIODir);
+    }
+
+    if (pkgInstall.length > 0) {
+        await installPackages(pkgInstall, nodecgIODir);
+    }
+}
+
+export function diffPackages(
+    requested: NpmPackage[],
+    current: NpmPackage[],
+): { pkgInstall: NpmPackage[]; pkgRemove: NpmPackage[] } {
+    return {
+        pkgInstall: requested.filter((a) => !current.find((b) => isPackageEquals(a, b))), // requested and not already exactly installed (e.g. version change)
+        pkgRemove: current.filter((a) => !requested.find((b) => isPackageEquals(a, b))), // currently installed but not requested exactly anymore
+    };
+}
+
+// TODO: log when packages got upgraded
+
+async function removePackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    for (const pkg of pkgs) {
+        console.log(`Removing package ${pkg.name} (${pkg.version})...`);
+        await removeNpmPackage(pkg, nodecgIODir);
+    }
+
+    console.log(`Removed ${pkgs.length} packages.`);
+}
+
+async function installPackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    const count = pkgs.length;
     console.log(`Installing ${count} packages (this might take a while)...`);
 
     let currentlyInstalling: string[] = [];
@@ -27,12 +71,12 @@ export async function createProductionInstall(info: ProductionInstallation, node
         // TODO: show only service/component name in progress bar without the nodecg-io prefix
         // all of those are nodecg-io components to that is redudant and makes the list unneccesarily long.
         const limit = pLimit(Math.max(1, os.cpus().length / 2));
-        const limitedPromises = info.packages.map((pkg) =>
+        const limitedPromises = pkgs.map((pkg) =>
             limit(async () => {
                 currentlyInstalling = currentlyInstalling.concat(pkg.name);
                 progressBar.increment(0, { currentlyInstalling: currentlyInstalling.join(", ") });
 
-                await processPackage(pkg, nodecgIODir);
+                await installSinglePackage(pkg, nodecgIODir);
 
                 currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.name);
                 progressBar.increment(1, { currentlyInstalling: currentlyInstalling.join(", ") });
@@ -48,7 +92,7 @@ export async function createProductionInstall(info: ProductionInstallation, node
     console.log(`Installed ${count} packages.`);
 }
 
-async function processPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
+async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     const tarStream = await createNpmPackageReadStream(pkg);
     await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
     await installNpmDependencies(pkg, nodecgIODir);

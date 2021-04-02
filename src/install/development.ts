@@ -5,6 +5,8 @@ import { DevelopmentInstallation } from "../installation";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
+// TODO: save commit hash and only execute bootstrap and build if commit hash has changed after pulling
+
 export async function createDevInstall(_info: DevelopmentInstallation, nodecgIODir: string): Promise<void> {
     await getGitRepo(nodecgIODir);
     await installNPMDependencies(nodecgIODir);

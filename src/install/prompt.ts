@@ -15,6 +15,7 @@ const version01Services = [
 ];
 
 export async function promptForInstallInfo(): Promise<Installation> {
+    // TODO: default to options of current installation
     const versions = await getInstallableVersions();
     const res = await inquirer.prompt([
         {

@@ -36,6 +36,7 @@ async function install(): Promise<void> {
     const currentInstall = await readInstallInfo(nodecgIODir);
     const requestedInstall = await promptForInstallInfo();
 
+    // TODO: can be removed once we have incremental installing in dev and prod.
     if (isInstallInfoEquals(currentInstall, requestedInstall)) {
         console.log("Requested installation is already installed. Not installing.");
         return;
@@ -53,7 +54,12 @@ async function install(): Promise<void> {
     if (requestedInstall.dev) {
         await createDevInstall(requestedInstall, nodecgIODir);
     } else {
-        await createProductionInstall(requestedInstall, nodecgIODir);
+        // FIXME: ugly as hell
+        if (!currentInstall?.dev) {
+            await createProductionInstall(requestedInstall, currentInstall, nodecgIODir);
+        } else {
+            await createProductionInstall(requestedInstall, undefined, nodecgIODir);
+        }
     }
 
     // Add bundle dirs to the nodecg config, so that they are loaded.
