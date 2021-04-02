@@ -7,13 +7,28 @@ import { promptForInstallInfo } from "./prompt";
 import { readInstallInfo, writeInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
 import * as fs from "fs/promises";
+import * as os from "os";
 
-export const installModule: CommandModule = {
+export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
     describe: "installs nodecg-io",
-    handler: async () => {
+
+    builder: (yargs) =>
+        yargs
+            .option("concurrency", {
+                alias: "j",
+                type: "number",
+                description: "The maximum count of concurrent running jobs",
+                default: Math.max(1, os.cpus().length / 2),
+            })
+            .check((argv) => {
+                if (argv.concurrency < 1) throw new Error("Concurrency must be greater than zero.");
+                return true;
+            }),
+
+    handler: async (argv) => {
         try {
-            await install();
+            await install(argv.concurrency);
         } catch (err) {
             console.log();
             console.error(`Error while installing nodecg-io: ${err}`);
@@ -22,7 +37,7 @@ export const installModule: CommandModule = {
     },
 };
 
-async function install(): Promise<void> {
+async function install(concurrency: number): Promise<void> {
     console.log("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
@@ -50,12 +65,14 @@ async function install(): Promise<void> {
             requestedInstall,
             currentInstall && currentInstall.dev ? currentInstall : undefined,
             nodecgIODir,
+            concurrency,
         );
     } else {
         await createProductionInstall(
             requestedInstall,
             currentInstall && !currentInstall.dev ? currentInstall : undefined,
             nodecgIODir,
+            concurrency,
         );
     }
 

@@ -9,6 +9,7 @@ export async function createDevInstall(
     requested: DevelopmentInstallation,
     current: DevelopmentInstallation | undefined,
     nodecgIODir: string,
+    concurrency: number,
 ): Promise<void> {
     requested.commitHash = await getGitRepo(nodecgIODir);
     if (requested.commitHash === current?.commitHash) {
@@ -17,7 +18,7 @@ export async function createDevInstall(
     }
 
     await installNPMDependencies(nodecgIODir);
-    await buildTypeScript(nodecgIODir);
+    await buildTypeScript(nodecgIODir, concurrency);
 }
 
 async function getGitRepo(nodecgIODir: string): Promise<string> {
@@ -74,8 +75,8 @@ async function installNPMDependencies(nodecgIODir: string) {
     console.log("Installed npm dependencies and bootstrapped.");
 }
 
-async function buildTypeScript(nodecgIODir: string) {
+async function buildTypeScript(nodecgIODir: string, concurrency: number) {
     console.log("Compiling nodecg-io...");
-    await executeCommand("npm", ["run", "build"], true, nodecgIODir);
+    await executeCommand("npm", ["run", "build", "--", "--concurrency", concurrency.toString()], true, nodecgIODir);
     console.log("Compiled nodecg-io.");
 }

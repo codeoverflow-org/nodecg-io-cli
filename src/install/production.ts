@@ -9,13 +9,13 @@ import {
 } from "../npmPackage";
 import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
-import * as os from "os";
 import { ensureDirectory } from "../fsUtils";
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
     current: ProductionInstallation | undefined,
     nodecgIODir: string,
+    concurrency: number,
 ): Promise<void> {
     await ensureDirectory(nodecgIODir);
 
@@ -26,7 +26,7 @@ export async function createProductionInstall(
     }
 
     if (pkgInstall.length > 0) {
-        await installPackages(pkgInstall, nodecgIODir);
+        await installPackages(pkgInstall, nodecgIODir, concurrency);
     }
 }
 
@@ -41,6 +41,8 @@ export function diffPackages(
 }
 
 // TODO: log when packages got upgraded
+// TODO: save install.json after each successful action or add some kind of validation so that the state of the
+// install.json doesn't break apart if the user quits the cli within an installation
 
 async function removePackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
     for (const pkg of pkgs) {
@@ -51,7 +53,7 @@ async function removePackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<
     console.log(`Removed ${pkgs.length} packages.`);
 }
 
-async function installPackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+async function installPackages(pkgs: NpmPackage[], nodecgIODir: string, concurrency: number): Promise<void> {
     const count = pkgs.length;
     console.log(`Installing ${count} packages (this might take a while)...`);
 
@@ -66,8 +68,7 @@ async function installPackages(pkgs: NpmPackage[], nodecgIODir: string): Promise
     try {
         progressBar.start(count, 0);
 
-        // TODO: make concurrency limit configurable using a cli opt.
-        const limit = pLimit(Math.max(1, os.cpus().length / 2));
+        const limit = pLimit(concurrency);
         const limitedPromises = pkgs.map((pkg) =>
             limit(async () => {
                 currentlyInstalling = currentlyInstalling.concat(pkg.simpleName);
