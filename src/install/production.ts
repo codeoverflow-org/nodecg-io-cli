@@ -17,7 +17,6 @@ export async function createProductionInstall(
     current: ProductionInstallation | undefined,
     nodecgIODir: string,
 ): Promise<void> {
-    // TODO: (maybe) detect changes in installation request and only remove/add changed packages instead of reinstalling everything
     await ensureDirectory(nodecgIODir);
 
     const { pkgRemove, pkgInstall } = diffPackages(requested.packages, current?.packages ?? []);
@@ -68,17 +67,15 @@ async function installPackages(pkgs: NpmPackage[], nodecgIODir: string): Promise
         progressBar.start(count, 0);
 
         // TODO: make concurrency limit configurable using a cli opt.
-        // TODO: show only service/component name in progress bar without the nodecg-io prefix
-        // all of those are nodecg-io components to that is redudant and makes the list unneccesarily long.
         const limit = pLimit(Math.max(1, os.cpus().length / 2));
         const limitedPromises = pkgs.map((pkg) =>
             limit(async () => {
-                currentlyInstalling = currentlyInstalling.concat(pkg.name);
+                currentlyInstalling = currentlyInstalling.concat(pkg.simpleName);
                 progressBar.increment(0, { currentlyInstalling: currentlyInstalling.join(", ") });
 
                 await installSinglePackage(pkg, nodecgIODir);
 
-                currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.name);
+                currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.simpleName);
                 progressBar.increment(1, { currentlyInstalling: currentlyInstalling.join(", ") });
             }),
         );

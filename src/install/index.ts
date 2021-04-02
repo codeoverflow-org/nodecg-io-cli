@@ -54,12 +54,11 @@ async function install(): Promise<void> {
     if (requestedInstall.dev) {
         await createDevInstall(requestedInstall, nodecgIODir);
     } else {
-        // FIXME: ugly as hell
-        if (!currentInstall?.dev) {
-            await createProductionInstall(requestedInstall, currentInstall, nodecgIODir);
-        } else {
-            await createProductionInstall(requestedInstall, undefined, nodecgIODir);
-        }
+        await createProductionInstall(
+            requestedInstall,
+            currentInstall && !currentInstall.dev ? currentInstall : undefined,
+            nodecgIODir,
+        );
     }
 
     // Add bundle dirs to the nodecg config, so that they are loaded.
