@@ -85,4 +85,6 @@ async function install(concurrency: number): Promise<void> {
     );
 
     await writeInstallInfo(nodecgIODir, requestedInstall);
+
+    console.log("Successfully installed nodecg-io.");
 }

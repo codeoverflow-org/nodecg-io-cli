@@ -1,4 +1,4 @@
-import { Installation } from "../installation";
+import { Installation, ProductionInstallation } from "../installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npmPackage";
 import { corePackage, dashboardPackage, developmentVersion } from "../fsUtils";
@@ -6,6 +6,12 @@ import { version as cliVersion } from "../../package.json";
 import * as semver from "semver";
 
 const corePackages = [corePackage, dashboardPackage];
+
+// To add a new release to this cli do the following (packages need to be already published on npm):
+// 1. add a new array under here which has all the services of the release in it (you can use the spread operator with the previous release).
+// 2. update getServicesForVersion to return the array for the new version.
+// 3. update the cli version (major and minor must match your release)
+
 // prettier-ignore
 const version01Services = [
     "ahk", "android", "curseforge", "discord", "intellij", "irc", "midi-input", "midi-output", "nanoleaf", "obs",
@@ -13,6 +19,10 @@ const version01Services = [
     "streamelements", "telegram", "tiane", "twitch-addons", "twitch-api", "twitch-chat", "twitch-pubsub",
     "twitter", "websocket-client", "websocket-server", "xdotool", "youtube",
 ];
+
+interface PromptVersionInput {
+    version: string;
+}
 
 export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
     const versions = await getInstallableVersions();
@@ -30,23 +40,18 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             type: "confirm",
             name: "useSamples",
             message: "Would you like to use the provided samples?",
-            when: (x) => x.version === developmentVersion,
+            when: (x: PromptVersionInput) => x.version === developmentVersion,
             default: currentInstall?.dev && currentInstall.useSamples,
         },
         {
             type: "checkbox",
             name: "services",
             message: "Which services do you want to use?",
-            choices: version01Services,
-            when: (x) => x.version !== developmentVersion,
-            default: () => {
-                if (currentInstall?.dev) return;
-                // Exclude core packages, they are not selectable and we don't want them here
-                const svcPackages = currentInstall?.packages.filter(
-                    (pkg) => !corePackages.find((corePkg) => pkg.name === corePkg),
-                );
-                // simpleName = service name.
-                return svcPackages?.map((pkg) => pkg.simpleName) ?? [];
+            choices: (x: PromptVersionInput) => getServicesForVersion(x.version),
+            when: (x: PromptVersionInput) => x.version !== developmentVersion,
+            default: (x: PromptVersionInput) => {
+                if (!currentInstall || currentInstall?.dev) return;
+                return getServicesFromInstall(currentInstall, x.version);
             },
         },
     ]);
@@ -54,7 +59,7 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
     if (res.version === developmentVersion) {
         return { ...res, dev: true };
     } else {
-        return { ...res, dev: false, packages: await buildPackageList(res.version, res.services) };
+        return { ...res, dev: false, packages: await buildPackageList(res.version, res.services), services: undefined };
     }
 }
 
@@ -91,4 +96,26 @@ async function buildPackageList(version: string, services: string[]): Promise<Np
     }));
 
     return await Promise.all(promises);
+}
+
+function getServicesForVersion(version: string): string[] {
+    switch (version) {
+        case "0.1":
+            return version01Services;
+        default:
+            throw new Error(`Don't have any service list for version ${version}. Something might be wrong here.`);
+    }
+}
+
+function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
+    const availableServices = getServicesForVersion(targetVersion);
+
+    const svcPackages = install?.packages
+        // Exclude core packages, they are not a optinal service, they are always required
+        .filter((pkg) => !corePackages.find((corePkg) => pkg.name === corePkg))
+        // Filter out services that aren't available in this version. The install might be of a higher version where this service is available
+        .filter((pkg) => availableServices.includes(pkg.simpleName));
+
+    // simpleName = service name.
+    return svcPackages?.map((pkg) => pkg.simpleName) ?? [];
 }

@@ -40,7 +40,6 @@ export function diffPackages(
     };
 }
 
-// TODO: log when packages got upgraded
 // TODO: save install.json after each successful action or add some kind of validation so that the state of the
 // install.json doesn't break apart if the user quits the cli within an installation
 
@@ -61,9 +60,10 @@ async function installPackages(pkgs: NpmPackage[], nodecgIODir: string, concurre
     const progressBar = new SingleBar({
         format: "Finished {value}/{total} packages [{bar}] {percentage}% {currentlyInstalling}",
     });
+    const incBar = (inc: number) => progressBar.increment(inc, { currentlyInstalling: currentlyInstalling.join(", ") });
 
-    // TODO: can we speed this up? It is kinda slow. Maybe add all dependencies into a package.json in the nodecg-io root
-    // TODO: split this into more and smaller functions.
+    // TODO: can we speed this up? It is kinda slow. Maybe add all dependencies into a package.json in the nodecg-io root?
+    // would be faster but also would be ugly.
 
     try {
         progressBar.start(count, 0);
@@ -71,13 +71,13 @@ async function installPackages(pkgs: NpmPackage[], nodecgIODir: string, concurre
         const limit = pLimit(concurrency);
         const limitedPromises = pkgs.map((pkg) =>
             limit(async () => {
-                currentlyInstalling = currentlyInstalling.concat(pkg.simpleName);
-                progressBar.increment(0, { currentlyInstalling: currentlyInstalling.join(", ") });
+                currentlyInstalling.push(pkg.simpleName);
+                incBar(0);
 
                 await installSinglePackage(pkg, nodecgIODir);
 
                 currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.simpleName);
-                progressBar.increment(1, { currentlyInstalling: currentlyInstalling.join(", ") });
+                incBar(1);
             }),
         );
 
