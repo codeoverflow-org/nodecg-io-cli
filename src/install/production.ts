@@ -99,9 +99,18 @@ async function installPackages(
 }
 
 async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
+    // If the user quits the cli while we install a package we don't want to leave it partially installed because:
+    // 1. not all necesarry files may have been extracted => won't work when accessing those files
+    // 2. npm i hasn't installed all packages yet => runtime error because the dependencies cannot be found
+    // Which is both bad for the user. Therefore we delete it if the user quits and the package is not fully installed.
+    const callback = () => removeNpmPackage(pkg, nodecgIODir);
+    process.on("SIGINT", callback);
+
     const tarStream = await createNpmPackageReadStream(pkg);
     await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
     await installNpmDependencies(pkg, nodecgIODir);
+
+    process.off("SIGINT", callback); // disable callback again, this package is now fully installed and usable
 }
 
 /**
