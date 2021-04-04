@@ -1,4 +1,4 @@
-import { ProductionInstallation } from "../installation";
+import { ProductionInstallation, writeInstallInfo } from "../installation";
 import {
     extractNpmPackageTar,
     createNpmPackageReadStream,
@@ -21,12 +21,16 @@ export async function createProductionInstall(
 
     const { pkgRemove, pkgInstall } = diffPackages(requested.packages, current?.packages ?? []);
 
+    if (current === undefined) {
+        current = { ...requested, packages: [] };
+    }
+
     if (pkgRemove.length > 0) {
-        await removePackages(pkgRemove, nodecgIODir);
+        await removePackages(pkgRemove, current, nodecgIODir);
     }
 
     if (pkgInstall.length > 0) {
-        await installPackages(pkgInstall, nodecgIODir, concurrency);
+        await installPackages(pkgInstall, current, nodecgIODir, concurrency);
     }
 }
 
@@ -40,19 +44,22 @@ export function diffPackages(
     };
 }
 
-// TODO: save install.json after each successful action or add some kind of validation so that the state of the
-// install.json doesn't break apart if the user quits the cli within an installation
-
-async function removePackages(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     for (const pkg of pkgs) {
         console.log(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
+        await saveProgress(state, nodecgIODir, pkg, false);
     }
 
     console.log(`Removed ${pkgs.length} packages.`);
 }
 
-async function installPackages(pkgs: NpmPackage[], nodecgIODir: string, concurrency: number): Promise<void> {
+async function installPackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+    concurrency: number,
+): Promise<void> {
     const count = pkgs.length;
     console.log(`Installing ${count} packages (this might take a while)...`);
 
@@ -75,6 +82,7 @@ async function installPackages(pkgs: NpmPackage[], nodecgIODir: string, concurre
                 incBar(0);
 
                 await installSinglePackage(pkg, nodecgIODir);
+                await saveProgress(state, nodecgIODir, pkg, true);
 
                 currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.simpleName);
                 incBar(1);
@@ -94,4 +102,37 @@ async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promi
     const tarStream = await createNpmPackageReadStream(pkg);
     await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
     await installNpmDependencies(pkg, nodecgIODir);
+}
+
+/**
+ * Saves a install or removal of a package to the install.json of the nodecg-io installation.
+ * We do this to save all finished actions so that if the user decides to kill the cli while installing nodecg-io
+ * we will know which packages have been removed/added and don't fall back to the state before the installation.
+ *
+ * E.g. a user wants to remove a service and add another:
+ * 1. Remove service 1 -> save
+ * 2. Install service 2, but user kills cli.
+ * Because we saved after each finished step we known that service 1 is no longer installed and also service 2 is not installed.
+ *
+ * @param state the current state of the installation, this is based on the before installation but will be updated to match the requested one by adding or removing packages
+ * @param nodecgIODir the directory in which nodecg-io is/will be installed.
+ * @param pkg the newly added or removed package.
+ * @param added whether the packages has been installed (true) or removed (false).
+ */
+async function saveProgress(
+    state: ProductionInstallation,
+    nodecgIODir: string,
+    pkg: NpmPackage,
+    added: boolean,
+): Promise<void> {
+    if (added) {
+        state.packages.push(pkg);
+    } else {
+        const pkgIdx = state.packages.indexOf(pkg);
+        if (pkgIdx !== -1) {
+            state.packages.splice(pkgIdx, 1);
+        }
+    }
+
+    await writeInstallInfo(nodecgIODir, state);
 }
