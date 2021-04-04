@@ -88,13 +88,11 @@ export async function executeCommand(
 ): Promise<void> {
     if (streamOutput) logger.info(`>>> ${command} ${args.join(" ")}`);
 
-    const child = spawn(command, args, { cwd: workingDir });
-
-    if (streamOutput) {
-        // Streams output to stdout/stderr of this process.
-        child.stdout.pipe(process.stdout);
-        child.stderr.pipe(process.stderr);
-    }
+    const child = spawn(command, args, {
+        cwd: workingDir,
+        shell: streamOutput,
+        stdio: streamOutput ? "inherit" : undefined,
+    });
 
     return new Promise((resolve, reject) => {
         child.addListener("error", (err) => reject(err));
@@ -114,7 +112,7 @@ export async function executeCommand(
                 // There was an error so we should present the user with the error message even if the output of this command
                 // should not be streamed normally, because the user needs it to be able to debug the problem.
                 if (!streamOutput) {
-                    child.stderr.pipe(process.stderr);
+                    child.stderr?.pipe(process.stderr);
                 }
                 reject(`Command "${command} ${args.join(" ")}" returned error code ${code}!`);
             }
