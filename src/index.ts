@@ -4,8 +4,6 @@ import { version } from "../package.json";
 
 // This file gets imported by the index.js file of the repository root.
 
-// TODO: make this whole cli more colorful.
-
 yargs(process.argv.slice(2))
     .version(version)
     .scriptName("nodecg-io")

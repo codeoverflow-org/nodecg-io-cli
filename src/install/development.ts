@@ -1,7 +1,9 @@
+import chalk = require("chalk");
 import { SingleBar } from "cli-progress";
 import * as git from "nodegit";
 import { directoryExists, executeCommand } from "../fsUtils";
 import { DevelopmentInstallation } from "../installation";
+import { logger } from "../log";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
@@ -13,7 +15,7 @@ export async function createDevInstall(
 ): Promise<void> {
     requested.commitHash = await getGitRepo(nodecgIODir);
     if (requested.commitHash === current?.commitHash) {
-        console.log("Repository was already up to date. Not building nodecg-io.");
+        logger.info("Repository was already up to date. Not building nodecg-io.");
         return;
     }
 
@@ -28,23 +30,23 @@ async function getGitRepo(nodecgIODir: string): Promise<string> {
 }
 
 async function pullRepo(nodecgIODir: string): Promise<git.Repository> {
-    console.log("nodecg-io git repository is already cloned.");
-    console.log("Pulling latest changes...");
+    logger.debug("nodecg-io git repository is already cloned.");
+    logger.info("Pulling latest changes...");
 
     const repo = await git.Repository.open(nodecgIODir);
     await repo.fetchAll();
     const branch = await repo.head();
     await repo.mergeBranches(branch, `origin/${branch.shorthand()}`);
 
-    console.log("Successfully pulled latest changes from GitHub.");
+    logger.info("Successfully pulled latest changes from GitHub.");
     return repo;
 }
 
 async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
-    console.log("Cloning nodecg-io git repository...");
+    logger.info("Cloning nodecg-io git repository...");
 
     const bar = new SingleBar({
-        format: "Cloning... {value}/{total} objects [{bar}] {percentage}%",
+        format: chalk.dim("Cloning... {value}/{total} objects [{bar}] {percentage}%"),
     });
     bar.start(0, 0);
 
@@ -62,21 +64,21 @@ async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
     });
 
     bar.stop();
-    console.log("Cloned nodecg-io git repository.");
+    logger.info("Cloned nodecg-io git repository.");
     return repo;
 }
 
 async function installNPMDependencies(nodecgIODir: string) {
-    console.log("Installing npm dependencies and bootstrapping...");
+    logger.info("Installing npm dependencies and bootstrapping...");
 
     await executeCommand("npm", ["install"], true, nodecgIODir);
     await executeCommand("npm", ["run", "bootstrap"], true, nodecgIODir);
 
-    console.log("Installed npm dependencies and bootstrapped.");
+    logger.info("Installed npm dependencies and bootstrapped.");
 }
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
-    console.log("Compiling nodecg-io...");
+    logger.info("Compiling nodecg-io...");
     await executeCommand("npm", ["run", "build", "--", "--concurrency", concurrency.toString()], true, nodecgIODir);
-    console.log("Compiled nodecg-io.");
+    logger.success("Compiled nodecg-io.");
 }

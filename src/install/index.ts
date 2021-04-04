@@ -8,6 +8,8 @@ import { readInstallInfo, writeInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
 import * as fs from "fs/promises";
 import * as os from "os";
+import * as chalk from "chalk";
+import { logger } from "../log";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
@@ -30,22 +32,22 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
         try {
             await install(argv.concurrency);
         } catch (err) {
-            console.log();
-            console.error(`Error while installing nodecg-io: ${err}`);
+            logger.error();
+            logger.error(chalk.red(`Error while installing nodecg-io: ${err}`));
             process.exit(1);
         }
     },
 };
 
 async function install(concurrency: number): Promise<void> {
-    console.log("Installing nodecg-io...");
+    logger.info("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
     if (!nodecgDir) {
         throw "Couldn't find a nodecg installation. Make sure that you are in the directory of you nodecg installation.";
     }
 
-    console.log(`Detected nodecg installation at ${nodecgDir}.`);
+    logger.debug(`Detected nodecg installation at ${nodecgDir}.`);
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
     const currentInstall = await readInstallInfo(nodecgIODir);
@@ -53,11 +55,11 @@ async function install(concurrency: number): Promise<void> {
 
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
-        console.log(`Deleting nodecg-io version "${currentInstall.version}"...`);
+        logger.info(`Deleting nodecg-io version "${currentInstall.version}"...`);
         await fs.rm(nodecgIODir, { recursive: true, force: true });
     }
 
-    console.log(`Installing nodecg-io version "${requestedInstall.version}"...`);
+    logger.info(`Installing nodecg-io version "${requestedInstall.version}"...`);
 
     // Get packages
     if (requestedInstall.dev) {
@@ -86,5 +88,5 @@ async function install(concurrency: number): Promise<void> {
 
     await writeInstallInfo(nodecgIODir, requestedInstall);
 
-    console.log("Successfully installed nodecg-io.");
+    logger.success("Successfully installed nodecg-io.");
 }

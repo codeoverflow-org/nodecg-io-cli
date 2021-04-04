@@ -4,6 +4,7 @@ import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npmPack
 import { corePackage, dashboardPackage, developmentVersion } from "../fsUtils";
 import { version as cliVersion } from "../../package.json";
 import * as semver from "semver";
+import { logger } from "../log";
 
 const corePackages = [corePackage, dashboardPackage];
 
@@ -82,7 +83,7 @@ async function getInstallableVersions(): Promise<string[]> {
     if (notInstallableVersions.length) {
         // TODO: direct user to update cli?
         const versionList = notInstallableVersions.join(", ");
-        console.log(`Cannot install the following versions because the cli doesn't support them yet: ${versionList}`);
+        logger.warn(`Cannot install the following versions because the cli doesn't support them yet: ${versionList}`);
     }
     return filtered;
 }

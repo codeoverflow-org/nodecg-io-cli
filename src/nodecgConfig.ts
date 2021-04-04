@@ -1,5 +1,6 @@
 import * as path from "path";
 import * as fs from "fs/promises";
+import { logger } from "./log";
 
 /**
  * A configuration of nodecg according to https://www.nodecg.dev/docs/nodecg-configuration/
@@ -80,8 +81,8 @@ export async function manageBundleDir(nodecgDir: string, bundleDir: string, incl
     await writeNodeCGConfig(nodecgDir, config);
 
     if (include) {
-        console.log(`Added bundle dir "${bundleDir}" to your nodecg config.`);
+        logger.debug(`Added bundle dir "${bundleDir}" to your nodecg config.`);
     } else {
-        console.log(`Removed bundle dir "${bundleDir}" from your nodecg config.`);
+        logger.debug(`Removed bundle dir "${bundleDir}" from your nodecg config.`);
     }
 }

@@ -10,6 +10,7 @@ import {
 import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
 import { ensureDirectory } from "../fsUtils";
+import { logger } from "../log";
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
@@ -46,12 +47,12 @@ export function diffPackages(
 
 async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     for (const pkg of pkgs) {
-        console.log(`Removing package ${pkg.name} (${pkg.version})...`);
+        logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
         await saveProgress(state, nodecgIODir, pkg, false);
     }
 
-    console.log(`Removed ${pkgs.length} packages.`);
+    logger.info(`Removed ${pkgs.length} packages.`);
 }
 
 async function installPackages(
@@ -61,7 +62,7 @@ async function installPackages(
     concurrency: number,
 ): Promise<void> {
     const count = pkgs.length;
-    console.log(`Installing ${count} packages (this might take a while)...`);
+    logger.info(`Installing ${count} packages (this might take a while)...`);
 
     let currentlyInstalling: string[] = [];
     const progressBar = new SingleBar({
@@ -95,7 +96,7 @@ async function installPackages(
         progressBar.stop();
     }
 
-    console.log(`Installed ${count} packages.`);
+    logger.info(`Installed ${count} packages.`);
 }
 
 async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {

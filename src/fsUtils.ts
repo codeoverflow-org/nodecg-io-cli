@@ -2,6 +2,7 @@ import * as fs from "fs/promises";
 import * as path from "path";
 import * as findUp from "find-up";
 import { spawn } from "child_process";
+import { logger } from "./log";
 
 export const corePackage = "nodecg-io-core";
 export const dashboardPackage = "nodecg-io-dashboard";
@@ -68,6 +69,7 @@ export async function ensureDirectory(dir: string): Promise<void> {
 
 // TODO: maybe use execa
 // TODO: show in which directory the command is executed.
+// TODO: passthrough color if supported
 
 /**
  * Executes the given command and optionally streams the output to the console.
@@ -84,7 +86,7 @@ export async function executeCommand(
     streamOutput: boolean,
     workingDir?: string,
 ): Promise<void> {
-    if (streamOutput) console.log(`>>> ${command} ${args.join(" ")}`);
+    if (streamOutput) logger.info(`>>> ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, { cwd: workingDir });
 
@@ -98,11 +100,17 @@ export async function executeCommand(
         child.addListener("error", (err) => reject(err));
 
         child.addListener("exit", (code) => {
-            if (streamOutput) console.log();
+            if (streamOutput) logger.info();
 
             if (code === 0) {
                 resolve();
             } else {
+                // when code is null it means that the process has been terminated due to some OS signal
+                // this usually happens when the user terminates the cli.
+                if (code === null) {
+                    reject(new Error("cli has been interupted!"));
+                }
+
                 // There was an error so we should present the user with the error message even if the output of this command
                 // should not be streamed normally, because the user needs it to be able to debug the problem.
                 if (!streamOutput) {
