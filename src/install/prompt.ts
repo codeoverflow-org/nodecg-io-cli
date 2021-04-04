@@ -42,7 +42,7 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             name: "useSamples",
             message: "Would you like to use the provided samples?",
             when: (x: PromptVersionInput) => x.version === developmentVersion,
-            default: currentInstall?.dev && currentInstall.useSamples,
+            default: currentInstall !== undefined && currentInstall.dev && currentInstall.useSamples,
         },
         {
             type: "checkbox",
