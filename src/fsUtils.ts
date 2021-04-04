@@ -90,7 +90,7 @@ export async function executeCommand(
 
     const child = spawn(command, args, {
         cwd: workingDir,
-        shell: streamOutput,
+        shell: true,
         stdio: streamOutput ? "inherit" : undefined,
     });
 

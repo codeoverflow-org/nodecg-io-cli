@@ -104,6 +104,8 @@ async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promi
     // 1. not all necesarry files may have been extracted => won't work when accessing those files
     // 2. npm i hasn't installed all packages yet => runtime error because the dependencies cannot be found
     // Which is both bad for the user. Therefore we delete it if the user quits and the package is not fully installed.
+
+    // TODO: I don't know how well this works with windows becasue npm might lock files and npm seems to not get terminated...
     const callback = () => removeNpmPackage(pkg, nodecgIODir);
     process.on("SIGINT", callback);
 
