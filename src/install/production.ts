@@ -11,6 +11,7 @@ import { SingleBar } from "cli-progress";
 import pLimit = require("p-limit");
 import { ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
+import * as chalk from "chalk";
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
@@ -45,6 +46,7 @@ export function diffPackages(
     };
 }
 
+// TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
 async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
@@ -68,10 +70,10 @@ async function installPackages(
     const progressBar = new SingleBar({
         format: "Finished {value}/{total} packages [{bar}] {percentage}% {currentlyInstalling}",
     });
-    const incBar = (inc: number) => progressBar.increment(inc, { currentlyInstalling: currentlyInstalling.join(", ") });
+    const incBar = (inc: number) =>
+        progressBar.increment(inc, { currentlyInstalling: chalk.dim(currentlyInstalling.join(", ")) });
 
-    // TODO: can we speed this up? It is kinda slow. Maybe add all dependencies into a package.json in the nodecg-io root?
-    // would be faster but also would be ugly.
+    // TODO: can we speed this up? It is kinda slow. Maybe add a root package.json and use npmv7 workspaces to do the install?
 
     try {
         progressBar.start(count, 0);
@@ -101,11 +103,11 @@ async function installPackages(
 
 async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     // If the user quits the cli while we install a package we don't want to leave it partially installed because:
-    // 1. not all necesarry files may have been extracted => won't work when accessing those files
+    // 1. not all necessary files may have been extracted => won't work when accessing those files
     // 2. npm i hasn't installed all packages yet => runtime error because the dependencies cannot be found
     // Which is both bad for the user. Therefore we delete it if the user quits and the package is not fully installed.
 
-    // TODO: I don't know how well this works with windows becasue npm might lock files and npm seems to not get terminated...
+    // TODO: I don't know how well this works with windows because npm might lock files and npm seems to not get terminated...
     const callback = () => removeNpmPackage(pkg, nodecgIODir);
     process.on("SIGINT", callback);
 

@@ -106,7 +106,7 @@ export async function executeCommand(
                 // when code is null it means that the process has been terminated due to some OS signal
                 // this usually happens when the user terminates the cli.
                 if (code === null) {
-                    reject(new Error("cli has been interupted!"));
+                    reject(new Error("cli has been interrupted!"));
                 }
 
                 // There was an error so we should present the user with the error message even if the output of this command

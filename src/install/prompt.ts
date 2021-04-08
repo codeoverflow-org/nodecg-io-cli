@@ -112,7 +112,7 @@ function getServicesFromInstall(install: ProductionInstallation, targetVersion: 
     const availableServices = getServicesForVersion(targetVersion);
 
     const svcPackages = install?.packages
-        // Exclude core packages, they are not a optinal service, they are always required
+        // Exclude core packages, they are not a optional service, they are always required
         .filter((pkg) => !corePackages.find((corePkg) => pkg.name === corePkg))
         // Filter out services that aren't available in this version. The install might be of a higher version where this service is available
         .filter((pkg) => availableServices.includes(pkg.simpleName));
