@@ -25,8 +25,15 @@ interface PromptVersionInput {
     version: string;
 }
 
+/**
+ * Prompts the user for installation details, e.g. which version, which services.
+ * Uses the passed installation as a default so a user can edit a installation by editing the things
+ * he wants different and leaving them as is to not change anything.
+ * @param currentInstall the current install that will be used for default values
+ * @returns the requested installation
+ */
 export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
-    const versions = await getInstallableVersions();
+    const versions = await getCompatibleVersions();
 
     const res = await inquirer.prompt([
         {
@@ -64,30 +71,41 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
     }
 }
 
-async function getInstallableVersions(): Promise<string[]> {
+/**
+ * Gets all nodecg-io minor versions and checks which are compatible with this cli version (major.minor equals or less).
+ * @returns compatible versions of nodecg-io
+ */
+async function getCompatibleVersions(): Promise<string[]> {
     const all = await getMinorVersions(corePackage);
     const { major, minor } = new semver.SemVer(cliVersion);
     const range = new semver.Range(`<=${major}.${minor}`);
 
-    const notInstallableVersions: string[] = [];
+    const notCompatibleVersions: string[] = [];
 
     const filtered = all.filter((v) => {
         if (semver.satisfies(`${v}.0`, range)) {
             return true;
         } else {
-            notInstallableVersions.push(v);
+            notCompatibleVersions.push(v);
             return false;
         }
     });
 
-    if (notInstallableVersions.length) {
+    if (notCompatibleVersions.length) {
         // TODO: direct user to update cli?
-        const versionList = notInstallableVersions.join(", ");
+        const versionList = notCompatibleVersions.join(", ");
         logger.warn(`Cannot install the following versions because the cli doesn't support them yet: ${versionList}`);
     }
     return filtered;
 }
 
+/**
+ * Builds a list of {@link NpmPackage}s for the passed nodecg-io version and services.
+ * This list includes mandatory packages like core and dashboard.
+ * @param version the version of nodecg-io for which you want the package details
+ * @param services the service you want
+ * @returns resolved packages with the most up to date patch version.
+ */
 async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
     const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
         name: pkgName,
@@ -99,6 +117,11 @@ async function buildPackageList(version: string, services: string[]): Promise<Np
     return await Promise.all(promises);
 }
 
+/**
+ * Returns you a list of services that are available for the passed nodecg-io version.
+ * @param version the major.minor nodecg-io version
+ * @returns all services of the passed version
+ */
 function getServicesForVersion(version: string): string[] {
     switch (version) {
         case "0.1":

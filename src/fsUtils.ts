@@ -11,8 +11,14 @@ export const developmentVersion = "development";
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
-export async function findNodeCGDirectory(): Promise<string | undefined> {
-    return await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), { type: "directory" });
+export async function findNodeCGDirectory(): Promise<string> {
+    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), { type: "directory" });
+    if (res === undefined) {
+        throw new Error(
+            "Couldn't find a nodecg installation. Make sure that you are in the directory of your nodecg installation.",
+        );
+    }
+    return res;
 }
 
 /**
@@ -67,10 +73,6 @@ export async function ensureDirectory(dir: string): Promise<void> {
     }
 }
 
-// TODO: maybe use execa
-// TODO: show in which directory the command is executed.
-// TODO: passthrough color if supported
-
 /**
  * Executes the given command and optionally streams the output to the console.
  * @param command the command that should be executed.
@@ -94,14 +96,18 @@ export async function executeCommand(
         stdio: streamOutput ? "inherit" : undefined,
     });
 
+    // When the cli gets interrupted we also want to interrupt all processes that we have created.
+    // On linux/macOS this happens automatically but not for windows.
+    process.on("SIGINT", () => child.kill("SIGINT"));
+
     return new Promise((resolve, reject) => {
         child.addListener("error", (err) => reject(err));
 
         child.addListener("exit", (code) => {
-            if (streamOutput) logger.info();
+            if (streamOutput) logger.info("");
 
             if (code === 0) {
-                resolve();
+                resolve(); // Success
             } else {
                 // when code is null it means that the process has been terminated due to some OS signal
                 // this usually happens when the user terminates the cli.

@@ -3,15 +3,18 @@ import * as chalk from "chalk";
 // This is a very small logger that just adapts the color of the messages that you log
 // unimportant messages get dim colors and important ones get brighter colors.
 
-function buildLogFunction(color: chalk.Chalk | undefined, stdErr = false): (msg?: string) => void {
+/**
+ * Creates a log function which will take a message and log it with the passed color.
+ * @param color the color which will be used by the returned log function
+ * @param stdErr whether to log to stderr or to stdout
+ */
+function buildLogFunction(color: chalk.Chalk | undefined, stdErr = false): (msg: string | undefined) => void {
     return (msg) => {
-        if (msg) {
-            const coloredMsg = color ? color(msg) : msg;
-            if (stdErr) {
-                console.error(coloredMsg);
-            } else {
-                console.log(coloredMsg);
-            }
+        const coloredMsg = color ? color(msg) : msg;
+        if (stdErr) {
+            console.error(coloredMsg);
+        } else {
+            console.log(coloredMsg);
         }
     };
 }

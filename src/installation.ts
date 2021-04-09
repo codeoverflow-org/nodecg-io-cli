@@ -26,7 +26,7 @@ export interface ProductionInstallation {
     packages: NpmPackage[];
 }
 
-function createPath(nodecgIODir: string) {
+function buildInstallJsonPath(nodecgIODir: string) {
     return path.join(nodecgIODir, "install.json");
 }
 
@@ -37,7 +37,7 @@ function createPath(nodecgIODir: string) {
  */
 export async function readInstallInfo(nodecgIODir: string): Promise<Installation | undefined> {
     try {
-        const content = await fs.readFile(createPath(nodecgIODir));
+        const content = await fs.readFile(buildInstallJsonPath(nodecgIODir));
         return JSON.parse(content.toString());
     } catch (_e) {
         return undefined;
@@ -51,5 +51,5 @@ export async function readInstallInfo(nodecgIODir: string): Promise<Installation
  */
 export async function writeInstallInfo(nodecgIODir: string, install: Installation): Promise<void> {
     const content = JSON.stringify(install, null, 4);
-    await fs.writeFile(createPath(nodecgIODir), content);
+    await fs.writeFile(buildInstallJsonPath(nodecgIODir), content);
 }

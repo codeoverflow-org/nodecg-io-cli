@@ -4,11 +4,10 @@ import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../f
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
-import { readInstallInfo, writeInstallInfo } from "../installation";
+import { readInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
 import * as fs from "fs/promises";
 import * as os from "os";
-import * as chalk from "chalk";
 import { logger } from "../log";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
@@ -20,8 +19,8 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
             .option("concurrency", {
                 alias: "j",
                 type: "number",
-                description: "The maximum count of concurrent running jobs",
-                default: Math.max(1, os.cpus().length / 2),
+                description: "The maximum count of concurrent running jobs when building a development install",
+                default: os.cpus().length,
             })
             .check((argv) => {
                 if (argv.concurrency < 1) throw new Error("Concurrency must be greater than zero.");
@@ -32,8 +31,8 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
         try {
             await install(argv.concurrency);
         } catch (err) {
-            logger.error();
-            logger.error(chalk.red(`Error while installing nodecg-io: ${err}`));
+            logger.error("");
+            logger.error(`Error while installing nodecg-io: ${err}`);
             process.exit(1);
         }
     },
@@ -43,10 +42,6 @@ async function install(concurrency: number): Promise<void> {
     logger.info("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
-    if (!nodecgDir) {
-        throw "Couldn't find a nodecg installation. Make sure that you are in the directory of you nodecg installation.";
-    }
-
     logger.debug(`Detected nodecg installation at ${nodecgDir}.`);
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
@@ -55,11 +50,11 @@ async function install(concurrency: number): Promise<void> {
 
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
-        logger.info(`Deleting nodecg-io version "${currentInstall.version}"...`);
+        logger.info(`Deleting nodecg-io version ${currentInstall.version}...`);
         await fs.rm(nodecgIODir, { recursive: true, force: true });
     }
 
-    logger.info(`Installing nodecg-io version "${requestedInstall.version}"...`);
+    logger.info(`Installing nodecg-io version ${requestedInstall.version}...`);
 
     // Get packages
     if (requestedInstall.dev) {
@@ -74,7 +69,6 @@ async function install(concurrency: number): Promise<void> {
             requestedInstall,
             currentInstall && !currentInstall.dev ? currentInstall : undefined,
             nodecgIODir,
-            concurrency,
         );
     }
 
@@ -85,8 +79,6 @@ async function install(concurrency: number): Promise<void> {
         path.join(nodecgIODir, "samples"),
         requestedInstall.dev && requestedInstall.useSamples,
     );
-
-    await writeInstallInfo(nodecgIODir, requestedInstall);
 
     logger.success("Successfully installed nodecg-io.");
 }

@@ -2,22 +2,25 @@ import { ProductionInstallation, writeInstallInfo } from "../installation";
 import {
     extractNpmPackageTar,
     createNpmPackageReadStream,
-    installNpmDependencies,
     NpmPackage,
     removeNpmPackage,
     isPackageEquals,
+    runNpmInstall,
 } from "../npmPackage";
-import { SingleBar } from "cli-progress";
-import pLimit = require("p-limit");
 import { ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
-import * as chalk from "chalk";
+import * as fs from "fs/promises";
+import path = require("path");
+import chalk = require("chalk");
+
+// TODO: check whether the user has npmv7 installed and direct to update if older
+// TODO: validate current install to check that all packages it says that are installed are actually installed
+// this might happen when a user removes the directory of a package.
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
     current: ProductionInstallation | undefined,
     nodecgIODir: string,
-    concurrency: number,
 ): Promise<void> {
     await ensureDirectory(nodecgIODir);
 
@@ -32,10 +35,19 @@ export async function createProductionInstall(
     }
 
     if (pkgInstall.length > 0) {
-        await installPackages(pkgInstall, current, nodecgIODir, concurrency);
+        await installPackages(pkgInstall, current, nodecgIODir);
     }
 }
 
+/**
+ * Finds the removed or added packages between two array of packages (current and requested install).
+ * That way we only need to remove what is no longer requested and install what was not already present.
+ * When a version differs it will be in both remove and install so you remove the old package first and install
+ * the newer version after that.
+ *
+ * @returns pkgInstall: newly added packages that should be installed,
+ *          pkgRemove: packages that are no longer requested and should be removed.
+ */
 export function diffPackages(
     requested: NpmPackage[],
     current: NpmPackage[],
@@ -51,82 +63,70 @@ async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation,
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
-        await saveProgress(state, nodecgIODir, pkg, false);
+        await saveProgress(state, nodecgIODir, [pkg], false);
     }
 
     logger.info(`Removed ${pkgs.length} packages.`);
 }
 
-async function installPackages(
-    pkgs: NpmPackage[],
-    state: ProductionInstallation,
-    nodecgIODir: string,
-    concurrency: number,
-): Promise<void> {
+async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const count = pkgs.length;
-    logger.info(`Installing ${count} packages (this might take a while)...`);
+    logger.info(`Downloading ${count} packages...`);
 
-    let currentlyInstalling: string[] = [];
-    const progressBar = new SingleBar({
-        format: "Finished {value}/{total} packages [{bar}] {percentage}% {currentlyInstalling}",
-    });
-    const incBar = (inc: number) =>
-        progressBar.increment(inc, { currentlyInstalling: chalk.dim(currentlyInstalling.join(", ")) });
+    let countDone = 0;
+    const updateStatus = () => {
+        const text = `${++countDone}/${count} packages downloaded.`;
+        process.stdout.write("\r" + chalk.dim(text));
+    };
 
-    // TODO: can we speed this up? It is kinda slow. Maybe add a root package.json and use npmv7 workspaces to do the install?
+    const downloadPromises = pkgs.map((pkg) => fetchSinglePackage(pkg, nodecgIODir).then(updateStatus));
+    await Promise.all(downloadPromises);
+    logger.info(""); // add newline after the progress indicator which always operates on the same line.
 
     try {
-        progressBar.start(count, 0);
-
-        const limit = pLimit(concurrency);
-        const limitedPromises = pkgs.map((pkg) =>
-            limit(async () => {
-                currentlyInstalling.push(pkg.simpleName);
-                incBar(0);
-
-                await installSinglePackage(pkg, nodecgIODir);
-                await saveProgress(state, nodecgIODir, pkg, true);
-
-                currentlyInstalling = currentlyInstalling.filter((p) => p !== pkg.simpleName);
-                incBar(1);
-            }),
-        );
-
-        await Promise.all(limitedPromises);
-    } finally {
-        // We must make sure to stop the progress bar because otherwise we'll write at the end of the line of the bar.
-        progressBar.stop();
+        logger.info("Installing dependencies...");
+        await installNpmDependencies(pkgs, nodecgIODir);
+        logger.info(`Installed ${count} packages.`);
+    } catch (e) {
+        // Removing packages again, because the dependencies couldn't be installed and the packages would result in runtime errors.
+        await Promise.all(pkgs.map((p) => removeNpmPackage(p, nodecgIODir)));
+        throw e;
     }
 
-    logger.info(`Installed ${count} packages.`);
+    await saveProgress(state, nodecgIODir, pkgs, true);
 }
 
-async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    // If the user quits the cli while we install a package we don't want to leave it partially installed because:
-    // 1. not all necessary files may have been extracted => won't work when accessing those files
-    // 2. npm i hasn't installed all packages yet => runtime error because the dependencies cannot be found
-    // Which is both bad for the user. Therefore we delete it if the user quits and the package is not fully installed.
-
-    // TODO: I don't know how well this works with windows because npm might lock files and npm seems to not get terminated...
-    const callback = () => removeNpmPackage(pkg, nodecgIODir);
-    process.on("SIGINT", callback);
-
+async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     const tarStream = await createNpmPackageReadStream(pkg);
     await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
-    await installNpmDependencies(pkg, nodecgIODir);
-
-    process.off("SIGINT", callback); // disable callback again, this package is now fully installed and usable
 }
 
 /**
- * Saves a install or removal of a package to the install.json of the nodecg-io installation.
- * We do this to save all finished actions so that if the user decides to kill the cli while installing nodecg-io
- * we will know which packages have been removed/added and don't fall back to the state before the installation.
- *
- * E.g. a user wants to remove a service and add another:
- * 1. Remove service 1 -> save
- * 2. Install service 2, but user kills cli.
- * Because we saved after each finished step we known that service 1 is no longer installed and also service 2 is not installed.
+ * Installs the npm dependencies of the passed packages by creating a package.json in the nodecg-io root directory
+ * using {@link writeWorkspacePackageJson} and then runs npm install in the nodecg-io directory
+ * to install all dependencies of all packages using one command.
+ * @param pkgs the packages for which teh dependencies should be installed.
+ * @param nodecgIODir the base nodecg-io directory
+ */
+async function installNpmDependencies(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    await writeWorkspacePackageJson(pkgs, nodecgIODir);
+    await runNpmInstall(nodecgIODir);
+}
+
+async function writeWorkspacePackageJson(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    logger.debug("Creating package.json file for nodecg-io workspace.");
+
+    const packageJson = {
+        name: "nodecg-io",
+        private: true,
+        workspaces: pkgs.map((p) => p.path),
+    };
+    const packageJsonString = JSON.stringify(packageJson, null, 4);
+    await fs.writeFile(path.join(nodecgIODir, "package.json"), packageJsonString);
+}
+
+/**
+ * Saves a install or removal of packages to the install.json of the nodecg-io installation.
  *
  * @param state the current state of the installation, this is based on the before installation but will be updated to match the requested one by adding or removing packages
  * @param nodecgIODir the directory in which nodecg-io is/will be installed.
@@ -136,16 +136,13 @@ async function installSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promi
 async function saveProgress(
     state: ProductionInstallation,
     nodecgIODir: string,
-    pkg: NpmPackage,
+    pkgs: NpmPackage[],
     added: boolean,
 ): Promise<void> {
     if (added) {
-        state.packages.push(pkg);
+        state.packages.push(...pkgs);
     } else {
-        const pkgIdx = state.packages.indexOf(pkg);
-        if (pkgIdx !== -1) {
-            state.packages.splice(pkgIdx, 1);
-        }
+        state.packages = state.packages.filter((p) => !pkgs.includes(p));
     }
 
     await writeInstallInfo(nodecgIODir, state);

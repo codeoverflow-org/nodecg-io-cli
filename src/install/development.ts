@@ -1,8 +1,7 @@
 import chalk = require("chalk");
-import { SingleBar } from "cli-progress";
 import * as git from "nodegit";
 import { directoryExists, executeCommand } from "../fsUtils";
-import { DevelopmentInstallation } from "../installation";
+import { DevelopmentInstallation, writeInstallInfo } from "../installation";
 import { logger } from "../log";
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
@@ -21,8 +20,16 @@ export async function createDevInstall(
 
     await installNPMDependencies(nodecgIODir);
     await buildTypeScript(nodecgIODir, concurrency);
+
+    await writeInstallInfo(nodecgIODir, requested); // save updated install which says that nodecg-io is now installed
 }
 
+/**
+ * Ensures that the current version of nodecg-io is in the passed directory by either cloning the repository or,
+ * if already existent, by pulling.
+ * @param nodecgIODir the directory in which nodecg-io should be downloaded to
+ * @returns the full git commit hash of the checked out commit
+ */
 async function getGitRepo(nodecgIODir: string): Promise<string> {
     const repo = (await directoryExists(nodecgIODir)) ? await pullRepo(nodecgIODir) : await cloneRepo(nodecgIODir);
     const headCommit = await repo.getHeadCommit();
@@ -45,25 +52,21 @@ async function pullRepo(nodecgIODir: string): Promise<git.Repository> {
 async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
     logger.info("Cloning nodecg-io git repository...");
 
-    const bar = new SingleBar({
-        format: chalk.dim("Cloning... {value}/{total} objects [{bar}] {percentage}%"),
-    });
-    bar.start(0, 0);
-
+    // TODO: does this work even if git is not installed?
     const repo = await git.Clone.clone(nodecgIOCloneURL, nodecgIODir, {
         fetchOpts: {
             callbacks: {
                 // Wohoooo broken typings....
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 transferProgress: (a: any) => {
-                    bar.setTotal(a.totalObjects());
-                    bar.update(a.receivedObjects());
+                    const text = `Fetched ${a.receivedObjects()}/${a.totalObjects()} objects`;
+                    process.stdout.write("\r" + chalk.dim(text));
                 },
             },
         },
     });
+    logger.info(""); // empty newline after progress indicator
 
-    bar.stop();
     logger.info("Cloned nodecg-io git repository.");
     return repo;
 }
@@ -71,6 +74,7 @@ async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
 async function installNPMDependencies(nodecgIODir: string) {
     logger.info("Installing npm dependencies and bootstrapping...");
 
+    // TODO: handle when npm is not installed
     await executeCommand("npm", ["install"], true, nodecgIODir);
     await executeCommand("npm", ["run", "bootstrap"], true, nodecgIODir);
 
