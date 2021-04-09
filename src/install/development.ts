@@ -75,14 +75,14 @@ async function installNPMDependencies(nodecgIODir: string) {
     logger.info("Installing npm dependencies and bootstrapping...");
 
     // TODO: handle when npm is not installed
-    await executeCommand("npm", ["install"], true, nodecgIODir);
-    await executeCommand("npm", ["run", "bootstrap"], true, nodecgIODir);
+    await executeCommand("npm", ["install"], nodecgIODir);
+    await executeCommand("npm", ["run", "bootstrap"], nodecgIODir);
 
     logger.info("Installed npm dependencies and bootstrapped.");
 }
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
     logger.info("Compiling nodecg-io...");
-    await executeCommand("npm", ["run", "build", "--", "--concurrency", concurrency.toString()], true, nodecgIODir);
+    await executeCommand("npm", ["run", "build", "--", "--concurrency", concurrency.toString()], nodecgIODir);
     logger.success("Compiled nodecg-io.");
 }

@@ -82,18 +82,13 @@ export async function ensureDirectory(dir: string): Promise<void> {
  * @param workingDir in which directory the command should be executed
  * @return a promise which will be resolved if the command exited with a non-zero exit code and rejected otherwise.
  */
-export async function executeCommand(
-    command: string,
-    args: string[],
-    streamOutput: boolean,
-    workingDir?: string,
-): Promise<void> {
-    if (streamOutput) logger.info(`>>> ${command} ${args.join(" ")}`);
+export async function executeCommand(command: string, args: string[], workingDir?: string): Promise<void> {
+    logger.info(`>>> ${command} ${args.join(" ")}`);
 
     const child = spawn(command, args, {
         cwd: workingDir,
         shell: true,
-        stdio: streamOutput ? "inherit" : undefined,
+        stdio: "inherit",
     });
 
     // When the cli gets interrupted we also want to interrupt all processes that we have created.
@@ -104,7 +99,7 @@ export async function executeCommand(
         child.addListener("error", (err) => reject(err));
 
         child.addListener("exit", (code) => {
-            if (streamOutput) logger.info("");
+            logger.info("");
 
             if (code === 0) {
                 resolve(); // Success
@@ -115,11 +110,6 @@ export async function executeCommand(
                     reject(new Error("cli has been interrupted!"));
                 }
 
-                // There was an error so we should present the user with the error message even if the output of this command
-                // should not be streamed normally, because the user needs it to be able to debug the problem.
-                if (!streamOutput) {
-                    child.stderr?.pipe(process.stderr);
-                }
                 reject(`Command "${command} ${args.join(" ")}" returned error code ${code}!`);
             }
         });

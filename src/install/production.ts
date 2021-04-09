@@ -84,8 +84,8 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
     logger.info(""); // add newline after the progress indicator which always operates on the same line.
 
     try {
-        logger.info("Installing dependencies...");
-        await installNpmDependencies(pkgs, nodecgIODir);
+        logger.info("Installing dependencies... (this might take a while)");
+        await installNpmDependencies([...state.packages, ...pkgs], nodecgIODir);
         logger.info(`Installed ${count} packages.`);
     } catch (e) {
         // Removing packages again, because the dependencies couldn't be installed and the packages would result in runtime errors.

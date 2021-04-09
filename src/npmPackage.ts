@@ -121,7 +121,9 @@ export async function extractNpmPackageTar(
  */
 export async function runNpmInstall(path: string): Promise<void> {
     // TODO: handle when npm is not installed.
-    await executeCommand("npm", ["install", "--prod"], true, path);
+    // TODO: npm seems to completely ignore --prod flag when installing inside a workspace.
+    // Is this intentional or is this a bug? Increases install sizes for us because nodecg is huge and a devDependency.
+    await executeCommand("npm", ["install", "--prod"], path);
 }
 
 /**
