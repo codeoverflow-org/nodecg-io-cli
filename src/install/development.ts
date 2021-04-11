@@ -1,12 +1,10 @@
 import chalk = require("chalk");
-import * as git from "nodegit";
+import * as git from "isomorphic-git";
+import * as fs from "fs";
+import * as http from "isomorphic-git/http/node";
 import { directoryExists, executeCommand } from "../fsUtils";
 import { DevelopmentInstallation, writeInstallInfo } from "../installation";
 import { logger } from "../log";
-
-// TODO: re-implement using isomorphic-git because nodegit is heavy and requires native bindings
-// which we don't want as a CLI requirement, native bindings are also not required for most services.
-// People shouldn't need to go through those hassles just to get the CLI.
 
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
@@ -16,7 +14,8 @@ export async function createDevInstall(
     nodecgIODir: string,
     concurrency: number,
 ): Promise<void> {
-    requested.commitHash = await getGitRepo(nodecgIODir);
+    await getGitRepo(nodecgIODir);
+    requested.commitHash = await getGitCommitHash(nodecgIODir);
     if (requested.commitHash === current?.commitHash) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
         return;
@@ -32,47 +31,60 @@ export async function createDevInstall(
  * Ensures that the current version of nodecg-io is in the passed directory by either cloning the repository or,
  * if already existent, by pulling.
  * @param nodecgIODir the directory in which nodecg-io should be downloaded to
- * @returns the full git commit hash of the checked out commit
  */
-async function getGitRepo(nodecgIODir: string): Promise<string> {
-    const repo = (await directoryExists(nodecgIODir)) ? await pullRepo(nodecgIODir) : await cloneRepo(nodecgIODir);
-    const headCommit = await repo.getHeadCommit();
-    return headCommit.sha();
+async function getGitRepo(nodecgIODir: string): Promise<void> {
+    if (await directoryExists(nodecgIODir)) {
+        await pullRepo(nodecgIODir);
+    } else {
+        await cloneRepo(nodecgIODir);
+    }
 }
 
-async function pullRepo(nodecgIODir: string): Promise<git.Repository> {
+async function pullRepo(nodecgIODir: string): Promise<void> {
     logger.debug("nodecg-io git repository is already cloned.");
     logger.info("Pulling latest changes...");
 
-    const repo = await git.Repository.open(nodecgIODir);
-    await repo.fetchAll();
-    const branch = await repo.head();
-    await repo.mergeBranches(branch, `origin/${branch.shorthand()}`);
+    await git.fastForward({ fs, http, url: nodecgIOCloneURL, dir: nodecgIODir, onProgress: renderGitProgress() });
 
+    logger.info(""); // finish progress line
     logger.info("Successfully pulled latest changes from GitHub.");
-    return repo;
 }
 
-async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
+async function cloneRepo(nodecgIODir: string): Promise<void> {
     logger.info("Cloning nodecg-io git repository...");
 
-    // TODO: does this work even if git is not installed?
-    const repo = await git.Clone.clone(nodecgIOCloneURL, nodecgIODir, {
-        fetchOpts: {
-            callbacks: {
-                // Wohoooo broken typings....
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                transferProgress: (a: any) => {
-                    const text = `Fetched ${a.receivedObjects()}/${a.totalObjects()} objects`;
-                    process.stdout.write("\r" + chalk.dim(text));
-                },
-            },
-        },
+    await git.clone({
+        fs,
+        http,
+        dir: nodecgIODir,
+        url: nodecgIOCloneURL,
+        onProgress: renderGitProgress(),
     });
-    logger.info(""); // empty newline after progress indicator
+    logger.info(""); // finish progress line
 
     logger.info("Cloned nodecg-io git repository.");
-    return repo;
+}
+
+function renderGitProgress(): git.ProgressCallback {
+    let previousPhase: string | undefined;
+    return (p) => {
+        if (previousPhase && previousPhase !== p.phase) {
+            logger.debug(""); // new line for new phase
+        }
+        previousPhase = p.phase;
+
+        const progress = p.loaded !== p.total ? `${p.loaded}/${p.total ?? "???"}` : "";
+        process.stdout.write("\r" + chalk.dim(`${p.phase} ${progress}`));
+    };
+}
+
+/**
+ * Gets the git commit hash of the repo in teh specified directory.
+ * @param nodecgIODir the directory of the git repository
+ * @returns the sha of the HEAD commit
+ */
+function getGitCommitHash(nodecgIODir: string): Promise<string> {
+    return git.resolveRef({ fs, dir: nodecgIODir, ref: "HEAD" });
 }
 
 async function installNPMDependencies(nodecgIODir: string) {
