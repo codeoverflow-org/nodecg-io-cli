@@ -6,7 +6,7 @@ import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
 import { readInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
-import * as fs from "fs/promises";
+import { promises as fs } from "fs";
 import * as os from "os";
 import { logger } from "../log";
 import { requireNpmV7 } from "../npm";

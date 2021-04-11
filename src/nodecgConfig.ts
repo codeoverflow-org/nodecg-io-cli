@@ -1,5 +1,5 @@
 import * as path from "path";
-import * as fs from "fs/promises";
+import { promises as fs } from "fs";
 import { logger } from "./log";
 
 /**

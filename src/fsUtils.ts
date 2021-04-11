@@ -1,5 +1,4 @@
-// TODO: we can only import fs promises this way in node 14+, but cli should be usable at least 12+
-import * as fs from "fs/promises";
+import { promises as fs } from "fs";
 import * as path from "path";
 import * as findUp from "find-up";
 import { spawn } from "child_process";
