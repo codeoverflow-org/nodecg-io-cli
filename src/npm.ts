@@ -5,6 +5,7 @@ import * as path from "path";
 import gunzip = require("gunzip-maybe");
 import tar = require("tar-fs");
 import { executeCommand } from "./fsUtils";
+import { exec } from "child_process";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
 
@@ -120,7 +121,6 @@ export async function extractNpmPackageTar(
  * @param path the path where a package.json is present
  */
 export async function runNpmInstall(path: string): Promise<void> {
-    // TODO: handle when npm is not installed.
     // TODO: npm seems to completely ignore --prod flag when installing inside a workspace.
     // Is this intentional or is this a bug? Increases install sizes for us because nodecg is huge and a devDependency.
     await executeCommand("npm", ["install", "--prod"], path);
@@ -133,4 +133,41 @@ export async function runNpmInstall(path: string): Promise<void> {
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     await fs.promises.rm(path.join(nodecgIODir, pkg.path), { recursive: true, force: true });
+}
+
+/**
+ * Gets version of the installed npm by running "npm --version".
+ * @returns the npm version or undefined if npm is not installed/not in $PATH.
+ */
+export function getNpmVersion(): Promise<semver.SemVer | undefined> {
+    return new Promise((resolve, reject) => {
+        const child = exec("npm --version", (err, stdout) => {
+            if (err) {
+                // not found
+                if (child.exitCode === 127) {
+                    resolve(undefined);
+                } else {
+                    reject(err);
+                }
+            } else {
+                const ver = new semver.SemVer(stdout);
+                resolve(ver);
+            }
+        });
+    });
+}
+
+/**
+ * Ensures that there is a npm installation in the current $PATH and it is npm version 7 or higher
+ * because thats required for nodecg-io prod (workspaces) and dev (lockfile v2).
+ */
+export async function requireNpmV7(): Promise<void> {
+    const version = await getNpmVersion();
+    if (!version) {
+        throw new Error("Could not find npm. Make sure npm is installed and in your $PATH.");
+    }
+
+    if (!semver.satisfies(version, ">=7")) {
+        throw new Error(`The nodecg-io cli requires a npm version of 7.0.0 or higher. You have ${version.version}.`);
+    }
 }

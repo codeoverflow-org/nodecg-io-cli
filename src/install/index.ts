@@ -9,6 +9,7 @@ import { createProductionInstall } from "./production";
 import * as fs from "fs/promises";
 import * as os from "os";
 import { logger } from "../log";
+import { requireNpmV7 } from "../npm";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
@@ -39,6 +40,8 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
 };
 
 async function install(concurrency: number): Promise<void> {
+    await requireNpmV7();
+
     logger.info("Installing nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();

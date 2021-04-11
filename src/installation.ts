@@ -1,6 +1,6 @@
 import * as fs from "fs/promises";
 import * as path from "path";
-import { NpmPackage } from "./npmPackage";
+import { NpmPackage } from "./npm";
 
 /**
  * Information about a install of nodecg-io. Includes things like version, etc.

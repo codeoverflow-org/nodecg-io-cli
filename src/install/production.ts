@@ -6,14 +6,13 @@ import {
     removeNpmPackage,
     isPackageEquals,
     runNpmInstall,
-} from "../npmPackage";
+} from "../npm";
 import { ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
 import * as fs from "fs/promises";
 import path = require("path");
 import chalk = require("chalk");
 
-// TODO: check whether the user has npmv7 installed and direct to update if older
 // TODO: validate current install to check that all packages it says that are installed are actually installed
 // this might happen when a user removes the directory of a package.
 

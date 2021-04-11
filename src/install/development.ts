@@ -4,6 +4,10 @@ import { directoryExists, executeCommand } from "../fsUtils";
 import { DevelopmentInstallation, writeInstallInfo } from "../installation";
 import { logger } from "../log";
 
+// TODO: re-implement using isomorphic-git because nodegit is heavy and requires native bindings
+// which we don't want as a CLI requirement, native bindings are also not required for most services.
+// People shouldn't need to go through those hassles just to get the CLI.
+
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 
 export async function createDevInstall(
@@ -74,7 +78,6 @@ async function cloneRepo(nodecgIODir: string): Promise<git.Repository> {
 async function installNPMDependencies(nodecgIODir: string) {
     logger.info("Installing npm dependencies and bootstrapping...");
 
-    // TODO: handle when npm is not installed
     await executeCommand("npm", ["install"], nodecgIODir);
     await executeCommand("npm", ["run", "bootstrap"], nodecgIODir);
 
