@@ -92,9 +92,9 @@ async function getCompatibleVersions(): Promise<string[]> {
     });
 
     if (notCompatibleVersions.length) {
-        // TODO: direct user to update cli?
         const versionList = notCompatibleVersions.join(", ");
         logger.warn(`Cannot install the following versions because the cli doesn't support them yet: ${versionList}`);
+        logger.warn('Update the nodecg-io-cli by running "npm install -g nodecg-io-cli".');
     }
     return filtered;
 }

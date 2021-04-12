@@ -168,6 +168,9 @@ export async function requireNpmV7(): Promise<void> {
     }
 
     if (!semver.satisfies(version, ">=7")) {
-        throw new Error(`The nodecg-io cli requires a npm version of 7.0.0 or higher. You have ${version.version}.`);
+        throw new Error(
+            `The nodecg-io cli requires a npm version of 7.0.0 or higher. You have ${version.version}.` +
+                '\nUpdate npm by running "npm install -g npm".',
+        );
     }
 }
