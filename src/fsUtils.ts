@@ -74,6 +74,14 @@ export async function ensureDirectory(dir: string): Promise<void> {
 }
 
 /**
+ * Deletes a directory at the specified path in the filesystem.
+ * @param dirPath the directory which should be deleted.
+ */
+export async function removeDirectory(dirPath: string): Promise<void> {
+    await fs.rm(dirPath, { recursive: true, force: true });
+}
+
+/**
  * Executes the given command and optionally streams the output to the console.
  * @param command the command that should be executed.
  * @param args the args which will be passed to the command

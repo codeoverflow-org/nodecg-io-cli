@@ -1,19 +1,18 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../fsUtils";
+import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../fsUtils";
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
 import { readInstallInfo } from "../installation";
 import { createProductionInstall } from "./production";
-import { promises as fs } from "fs";
 import * as os from "os";
 import { logger } from "../log";
 import { requireNpmV7 } from "../npm";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
-    describe: "installs nodecg-io",
+    describe: "installs nodecg-io to your local nodecg installation",
 
     builder: (yargs) =>
         yargs
@@ -32,7 +31,6 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
         try {
             await install(argv.concurrency);
         } catch (err) {
-            logger.error("");
             logger.error(`Error while installing nodecg-io: ${err}`);
             process.exit(1);
         }
@@ -54,7 +52,7 @@ async function install(concurrency: number): Promise<void> {
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
         logger.info(`Deleting nodecg-io version ${currentInstall.version}...`);
-        await fs.rm(nodecgIODir, { recursive: true, force: true });
+        await removeDirectory(nodecgIODir);
     }
 
     logger.info(`Installing nodecg-io version ${requestedInstall.version}...`);
