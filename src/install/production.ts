@@ -6,15 +6,13 @@ import {
     removeNpmPackage,
     isPackageEquals,
     runNpmInstall,
+    buildNpmPackagePath,
 } from "../npm";
-import { ensureDirectory } from "../fsUtils";
+import { directoryExists, ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
 import { promises as fs } from "fs";
 import path = require("path");
 import chalk = require("chalk");
-
-// TODO: validate current install to check that all packages it says that are installed are actually installed
-// this might happen when a user removes the directory of a package.
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
@@ -22,6 +20,10 @@ export async function createProductionInstall(
     nodecgIODir: string,
 ): Promise<void> {
     await ensureDirectory(nodecgIODir);
+
+    if (current) {
+        await validateInstall(current, nodecgIODir);
+    }
 
     const { pkgRemove, pkgInstall } = diffPackages(requested.packages, current?.packages ?? []);
 
@@ -145,4 +147,26 @@ async function saveProgress(
     }
 
     await writeInstallInfo(nodecgIODir, state);
+}
+
+/**
+ * Validates a production install by checking that every package that should be installed is actually installed.
+ * @param state the current install
+ * @param nodecgIODir the directory in which nodecg-io is installed
+ */
+async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+    const pkgs = state.packages;
+    const p = pkgs.map(async (pkg) => {
+        const pkgPath = buildNpmPackagePath(nodecgIODir, pkg);
+        if (!(await directoryExists(pkgPath))) {
+            // package is not at the expected location, it may have been deleted by the user.
+            // Remove from current state.
+            logger.debug(
+                `Package ${pkg.name} was expected to be at ${pkgPath} but wasn't. Package will be reinstalled.`,
+            );
+            pkgs.splice(pkgs.indexOf(pkg), 1);
+        }
+    });
+
+    await Promise.all(p);
 }

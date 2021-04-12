@@ -75,6 +75,13 @@ function buildNpmPackageURL(pkg: NpmPackage): string {
 }
 
 /**
+ * Builds the path where this package should be installed to.
+ */
+export function buildNpmPackagePath(nodecgIODir: string, pkg: NpmPackage): string {
+    return path.join(nodecgIODir, pkg.path);
+}
+
+/**
  * Creates a read stream that will be fed the tarball of the passed package directly from the official npm registry.
  * @param pkg the package to fetch
  */
@@ -100,7 +107,7 @@ export async function extractNpmPackageTar(
     nodecgIODir: string,
 ): Promise<void> {
     const extractStream = tarStream.pipe(gunzip()).pipe(
-        tar.extract(path.join(nodecgIODir, pkg.path), {
+        tar.extract(buildNpmPackagePath(nodecgIODir, pkg), {
             map: (header) => {
                 // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
                 // named package in each downloaded package directory.
@@ -132,7 +139,7 @@ export async function runNpmInstall(path: string): Promise<void> {
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    await fs.promises.rm(path.join(nodecgIODir, pkg.path), { recursive: true, force: true });
+    await fs.promises.rm(buildNpmPackagePath(nodecgIODir, pkg), { recursive: true, force: true });
 }
 
 /**
