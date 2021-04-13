@@ -28,13 +28,13 @@ async function uninstall(): Promise<void> {
         return;
     }
 
-    // Delete directory
-    logger.debug(`Uninstalling nodecg-io from nodecg installation at ${nodecgDir}...`);
-    await removeDirectory(nodecgIODir);
-
     // Remove bundle dirs from nodecg configuration
     await manageBundleDir(nodecgDir, nodecgIODir, false);
     await manageBundleDir(nodecgDir, path.join(nodecgIODir, "samples"), false);
+
+    // Delete directory
+    logger.debug(`Uninstalling nodecg-io from nodecg installation at ${nodecgDir}...`);
+    await removeDirectory(nodecgIODir);
 
     logger.success("Successfully uninstalled nodecg-io.");
 }
