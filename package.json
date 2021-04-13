@@ -8,8 +8,8 @@
         "run": "tsc -b && node build/index.js",
         "watch": "tsc -b -w",
         "lint": "eslint src --ext ts",
-        "format": "prettier --write \"./**/*.{ts,json}\"",
-        "format-pre-commit": "pretty-quick --staged --pattern '*/**/*.{ts,json}'",
+        "format": "prettier --write \"./**/*.{ts,json,md}\"",
+        "format-pre-commit": "pretty-quick --staged --pattern '*/**/*.{ts,json,md}'",
         "prepare": "husky install"
     },
     "bin": {
