@@ -4,10 +4,6 @@ import * as findUp from "find-up";
 import { spawn } from "child_process";
 import { logger } from "./log";
 
-export const corePackage = "nodecg-io-core";
-export const dashboardPackage = "nodecg-io-dashboard";
-export const developmentVersion = "development";
-
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */

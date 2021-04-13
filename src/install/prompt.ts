@@ -1,26 +1,16 @@
 import { Installation, ProductionInstallation } from "../installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npm";
-import { corePackage, dashboardPackage, developmentVersion } from "../fsUtils";
 import * as semver from "semver";
 import { logger } from "../log";
-
-const corePackages = [corePackage, dashboardPackage];
-
-// To add a new release to this cli do the following (packages need to be already published on npm):
-// 1. add a new array under here which has all the services of the release in it (you can use the spread operator with the previous release).
-// 2. update getServicesForVersion to return the array for the new version.
-// 3. update supportedNodeCGIORange to include your new nodecg-io version.
-
-// prettier-ignore
-const version01Services = [
-    "ahk", "android", "curseforge", "discord", "intellij", "irc", "midi-input", "midi-output", "nanoleaf", "obs",
-    "philipshue", "rcon", "reddit", "sacn-receiver", "sacn-sender", "serial", "slack", "spotify", "streamdeck",
-    "streamelements", "telegram", "tiane", "twitch-addons", "twitch-api", "twitch-chat", "twitch-pubsub",
-    "twitter", "websocket-client", "websocket-server", "xdotool", "youtube",
-];
-
-const supportedNodeCGIORange = new semver.Range("<=0.1");
+import {
+    corePackage,
+    corePackages,
+    dashboardPackage,
+    developmentVersion,
+    getServicesForVersion,
+    supportedNodeCGIORange,
+} from "./nodecgIOVersions";
 
 interface PromptVersionInput {
     version: string;
@@ -113,20 +103,6 @@ async function buildPackageList(version: string, services: string[]): Promise<Np
     }));
 
     return await Promise.all(promises);
-}
-
-/**
- * Returns you a list of services that are available for the passed nodecg-io version.
- * @param version the major.minor nodecg-io version
- * @returns all services of the passed version
- */
-function getServicesForVersion(version: string): string[] {
-    switch (version) {
-        case "0.1":
-            return version01Services;
-        default:
-            throw new Error(`Don't have any service list for version ${version}. Something might be wrong here.`);
-    }
 }
 
 /**
