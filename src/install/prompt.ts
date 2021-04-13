@@ -2,7 +2,6 @@ import { Installation, ProductionInstallation } from "../installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npm";
 import { corePackage, dashboardPackage, developmentVersion } from "../fsUtils";
-import { version as cliVersion } from "../../package.json";
 import * as semver from "semver";
 import { logger } from "../log";
 
@@ -11,7 +10,7 @@ const corePackages = [corePackage, dashboardPackage];
 // To add a new release to this cli do the following (packages need to be already published on npm):
 // 1. add a new array under here which has all the services of the release in it (you can use the spread operator with the previous release).
 // 2. update getServicesForVersion to return the array for the new version.
-// 3. update the cli version (major and minor must match your release)
+// 3. update supportedNodeCGIORange to include your new nodecg-io version.
 
 // prettier-ignore
 const version01Services = [
@@ -20,6 +19,8 @@ const version01Services = [
     "streamelements", "telegram", "tiane", "twitch-addons", "twitch-api", "twitch-chat", "twitch-pubsub",
     "twitter", "websocket-client", "websocket-server", "xdotool", "youtube",
 ];
+
+const supportedNodeCGIORange = new semver.Range("<=0.1");
 
 interface PromptVersionInput {
     version: string;
@@ -77,13 +78,10 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
  */
 async function getCompatibleVersions(): Promise<string[]> {
     const all = await getMinorVersions(corePackage);
-    const { major, minor } = new semver.SemVer(cliVersion);
-    const range = new semver.Range(`<=${major}.${minor}`);
-
     const notCompatibleVersions: string[] = [];
 
     const filtered = all.filter((v) => {
-        if (semver.satisfies(`${v}.0`, range)) {
+        if (semver.satisfies(`${v}.0`, supportedNodeCGIORange)) {
             return true;
         } else {
             notCompatibleVersions.push(v);
