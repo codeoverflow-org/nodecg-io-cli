@@ -10,7 +10,7 @@ import * as os from "os";
 import { logger } from "../log";
 import { requireNpmV7 } from "../npm";
 
-// TODO: remove nodecg-io directory if installation was aborted?
+// TODO: remove nodecg-io directory if initial installation was aborted?
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",

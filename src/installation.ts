@@ -9,6 +9,7 @@ export type Installation = DevelopmentInstallation | ProductionInstallation;
 
 /**
  * A develop version of nodecg-io that is cloned directly form the git repository.
+ * This is the current WIP everything may break version.
  */
 export interface DevelopmentInstallation {
     dev: true;
@@ -19,6 +20,7 @@ export interface DevelopmentInstallation {
 
 /**
  * A production install using released tarballs of the packages from npm.
+ * This is a version from a release.
  */
 export interface ProductionInstallation {
     dev: false;

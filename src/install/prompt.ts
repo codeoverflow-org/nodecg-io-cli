@@ -129,6 +129,12 @@ function getServicesForVersion(version: string): string[] {
     }
 }
 
+/**
+ * Returns the list of installed services of a production installation.
+ * @param install the installation info for which you want the list of installed services.
+ * @param targetVersion the version of nodecg-io that is installed
+ * @returns the list of installed services (simpleName of the packages without the nodecg-io- prefix)
+ */
 function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
     const availableServices = getServicesForVersion(targetVersion);
 

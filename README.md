@@ -26,8 +26,6 @@ Here's a brief overview of the available commands. More indepth usage guides of 
 
 Installs nodecg-io to your current nodecg installation into a sub-directory called `nodecg-io`. Allows you to select which released version you want or if you wish to get a development install.
 
-<!-- TODO: mention that it saves the state and allows for editing by rerunning. Mention updating -->
-
 A production install fetches tarballs of the needed packages from the official npm registry, unpacks them, creates a `package.json` with all packages in a npm v7 workspace configuration and installs dependencies that way.
 
 A development install clones the official git repository (`master`), installs dependencies, bootstraps all packages using lerna and builds all packages.

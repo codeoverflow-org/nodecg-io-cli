@@ -60,6 +60,13 @@ export function diffPackages(
 }
 
 // TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
+
+/**
+ * Removes a list of packages from a production nodecg-io install.
+ * @param pkgs the packages that should be removed
+ * @param state the current installation info that will be updated with the removals
+ * @param nodecgIODir the nodecg-io directory in which the packages will be removed
+ */
 async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
@@ -70,6 +77,12 @@ async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation,
     logger.info(`Removed ${pkgs.length} packages.`);
 }
 
+/**
+ * Installs a list of packages to a nodecg-io install by fetching, extracting and installing the dependencies.
+ * @param pkgs the packages that should be installed
+ * @param state the current install state that will be updated with the newly added packages
+ * @param nodecgIODir the directory in which nodecg-io is installed an and the new packages should be installed into
+ */
 async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const count = pkgs.length;
     logger.info(`Downloading ${count} packages...`);
@@ -97,6 +110,11 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
     await saveProgress(state, nodecgIODir, pkgs, true);
 }
 
+/**
+ * Fetches and extracts a single package from the official npm registry.
+ * @param pkg the package to download
+ * @param nodecgIODir the root directory in which the package with the package path will be fetched into
+ */
 async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
     const tarStream = await createNpmPackageReadStream(pkg);
     await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
@@ -114,6 +132,11 @@ async function installNpmDependencies(pkgs: NpmPackage[], nodecgIODir: string): 
     await runNpmInstall(nodecgIODir);
 }
 
+/**
+ * Creates a root package.json file with all packages added as a npm v7 workspace.
+ * @param pkgs the packages that are installed and should be included in the npm workspace.
+ * @param nodecgIODir the directory in which nodecg-io is installed
+ */
 async function writeWorkspacePackageJson(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
     logger.debug("Creating package.json file for nodecg-io workspace.");
 
