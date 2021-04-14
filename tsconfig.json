@@ -2,7 +2,7 @@
     "compilerOptions": {
         // Output related
         "target": "es2017",
-        "importHelpers": true,
+        "sourceMap": true,
 
         // Module resolution
         "moduleResolution": "node",
@@ -19,8 +19,6 @@
         "skipLibCheck": true,
 
         "module": "CommonJS",
-        "types": ["node"],
-
         "outDir": "build"
     },
     "include": ["src/**/*"],

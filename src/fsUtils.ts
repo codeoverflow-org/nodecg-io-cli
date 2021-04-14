@@ -59,7 +59,7 @@ export async function directoryExists(dir: string): Promise<boolean> {
 }
 
 /**
- * Ensures that teh specified directory exists.
+ * Ensures that the specified directory exists.
  * If it is already existing nothing is done and if it doesn't it will be created.
  * @param dir the directory that should be ensured to exist.
  */
