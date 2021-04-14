@@ -1,5 +1,7 @@
 import { vol } from "memfs";
-import { directoryExists, ensureDirectory } from "../src/fsUtils";
+import { directoryExists, ensureDirectory, executeCommand, removeDirectory } from "../src/fsUtils";
+import * as path from "path";
+import * as child_process from "child_process";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
@@ -35,5 +37,43 @@ describe("ensureDirectory", () => {
         await ensureDirectory(testDir);
         const s = await vol.promises.stat(testDir);
         expect(s.isDirectory()).toBe(true);
+    });
+});
+
+describe("removeDirectory", () => {
+    test("should remove directory recursively", async () => {
+        await vol.promises.mkdir(testDir);
+        await vol.promises.writeFile(path.join(testDir, "test.txt"), "abc");
+        await vol.promises.mkdir(path.join(testDir, "sub-dir"));
+
+        await removeDirectory(testDir);
+
+        // Directory should not be there anymore.
+        await expect(vol.promises.stat(testDir)).rejects.toThrow("no such file or directory");
+    });
+
+    test("should fail if directory does not exist", async () => {
+        // should fail because the directory does not exist
+        await expect(removeDirectory(testDir)).rejects.toThrow("no such file or directory");
+    });
+});
+
+describe("executeCommand", () => {
+    test("should not error if the command successfully exits (code 0)", async () => {
+        await executeCommand("exit", ["0"]);
+    });
+
+    test("should error if the command exits with a non-zero exit code", async () => {
+        await expect(executeCommand("exit", ["1"])).rejects.toThrow("error code 1");
+    });
+
+    test("should error if command is invalid", async () => {
+        await expect(executeCommand("someHopefullyInvalidCommand", [])).rejects.toThrow("error code 1"); // win: 1; unix 127
+    });
+
+    test("should inherit io streams", async () => {
+        const spy = jest.spyOn(child_process, "spawn");
+        await executeCommand("exit", ["0"]);
+        expect(spy.mock.calls[0][2].stdio).toBe("inherit");
     });
 });

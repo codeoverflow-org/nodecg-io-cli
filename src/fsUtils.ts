@@ -74,7 +74,25 @@ export async function ensureDirectory(dir: string): Promise<void> {
  * @param dirPath the directory which should be deleted.
  */
 export async function removeDirectory(dirPath: string): Promise<void> {
-    await fs.rm(dirPath, { recursive: true, force: true });
+    // Delete all contents of this directory because otherwise we cannot remove it (why can't that be part of fs, oh node 14+ only...)
+    const contents = await fs.readdir(dirPath); // get entries of directory
+
+    const rmPromises = contents.map(async (f) => {
+        const subpath = path.join(dirPath, f);
+        const stat = await fs.stat(subpath);
+
+        // rm if file and use this function recursively if directory
+        if (stat.isDirectory()) {
+            await removeDirectory(subpath);
+        } else {
+            await fs.unlink(subpath);
+        }
+    });
+
+    await Promise.all(rmPromises);
+
+    // now that the directory is empty we can delete it.
+    await fs.rmdir(dirPath);
 }
 
 /**
@@ -114,7 +132,7 @@ export async function executeCommand(command: string, args: string[], workingDir
                     reject(new Error("cli has been interrupted!"));
                 }
 
-                reject(`Command "${command} ${args.join(" ")}" returned error code ${code}!`);
+                reject(new Error(`Command "${command} ${args.join(" ")}" returned error code ${code}!`));
             }
         });
     });
