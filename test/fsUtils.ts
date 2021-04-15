@@ -1,12 +1,52 @@
 import { vol } from "memfs";
-import { directoryExists, ensureDirectory, executeCommand, removeDirectory } from "../src/fsUtils";
+import { directoryExists, ensureDirectory, executeCommand, findNodeCGDirectory, removeDirectory } from "../src/fsUtils";
 import * as path from "path";
 import * as child_process from "child_process";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
 
+// fs.stat is broken in memfs, assume that the first path exists because this is used by find-up which is used by findNodeCGDirectory
+// oh, it is actually just passed one path and is (ab)used to check whether a path is existing or not.
+jest.mock("locate-path", () => (paths: string[]) => paths[0]);
+
 const testDir = "/testDir";
+
+describe("findNodeCGDirectory", () => {
+    const nodecgDir = path.join(testDir, "nodecg");
+    const nodecgSubDir = path.join(nodecgDir, "subDirectory");
+    const packageJsonFile = path.join(nodecgDir, "package.json");
+
+    beforeEach(async () => {
+        await vol.promises.mkdir(testDir);
+        await vol.promises.mkdir(nodecgDir);
+        await vol.promises.mkdir(nodecgSubDir);
+
+        // Fake package.json of a real nodecg install
+        await vol.promises.writeFile(
+            packageJsonFile,
+            JSON.stringify({
+                name: "nodecg",
+            }),
+        );
+    });
+
+    test("should work when calling inside a nodecg install", async () => {
+        await expect(findNodeCGDirectory(nodecgDir)).resolves.toBe(nodecgDir);
+    });
+
+    test("should work when calling in sub directory of a nodecg install", async () => {
+        await expect(findNodeCGDirectory(nodecgSubDir)).resolves.toBe(nodecgDir);
+    });
+
+    test("should work when cwd is pointing to a file inside a nodecg install", async () => {
+        await expect(findNodeCGDirectory(packageJsonFile)).resolves.toBe(nodecgDir);
+    });
+
+    test("should error if not inside any nodecg directory", async () => {
+        await expect(findNodeCGDirectory("/")).rejects.toThrow("Couldn't find a nodecg install");
+    });
+});
 
 describe("directoryExists", () => {
     test("should return false on non-existent directory", async () => {

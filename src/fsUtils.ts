@@ -7,8 +7,11 @@ import { logger } from "./log";
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
-export async function findNodeCGDirectory(): Promise<string> {
-    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), { type: "directory" });
+export async function findNodeCGDirectory(cwd = process.cwd()): Promise<string> {
+    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), {
+        type: "directory",
+        cwd,
+    });
     if (res === undefined) {
         throw new Error(
             "Couldn't find a nodecg installation. Make sure that you are in the directory of your nodecg installation.",

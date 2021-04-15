@@ -4,3 +4,6 @@ node_modules/
 
 # nodecg to test features
 nodecg/
+
+# Test coverage output
+coverage/
