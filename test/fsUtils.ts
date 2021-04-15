@@ -10,7 +10,8 @@ afterEach(() => vol.reset());
 // oh, it is actually just passed one path and is (ab)used to check whether a path is existing or not.
 jest.mock("locate-path", () => (paths: string[]) => paths[0]);
 
-const testDir = "/testDir";
+const root = process.platform === "win32" ? "D:\\" : "/";
+const testDir = path.join(root, "testDir");
 
 describe("findNodeCGDirectory", () => {
     const nodecgDir = path.join(testDir, "nodecg");
