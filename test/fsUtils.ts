@@ -2,6 +2,7 @@ import { vol } from "memfs";
 import { directoryExists, ensureDirectory, executeCommand, findNodeCGDirectory, removeDirectory } from "../src/fsUtils";
 import * as path from "path";
 import * as child_process from "child_process";
+import { fsRoot } from "./testUtils";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
@@ -10,8 +11,7 @@ afterEach(() => vol.reset());
 // oh, it is actually just passed one path and is (ab)used to check whether a path is existing or not.
 jest.mock("locate-path", () => (paths: string[]) => paths[0]);
 
-const root = process.platform === "win32" ? "D:\\" : "/";
-const testDir = path.join(root, "testDir");
+const testDir = path.join(fsRoot, "testDir");
 
 describe("findNodeCGDirectory", () => {
     const nodecgDir = path.join(testDir, "nodecg");
