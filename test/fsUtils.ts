@@ -1,15 +1,11 @@
-import { vol } from "memfs";
+import { createFsFromVolume, vol } from "memfs";
 import { directoryExists, ensureDirectory, executeCommand, findNodeCGDirectory, removeDirectory } from "../src/fsUtils";
 import * as path from "path";
 import * as child_process from "child_process";
 import { fsRoot } from "./testUtils";
 
-jest.mock("fs", () => vol);
+jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
-
-// fs.stat is broken in memfs, assume that the first path exists because this is used by find-up which is used by findNodeCGDirectory
-// oh, it is actually just passed one path and is (ab)used to check whether a path is existing or not.
-jest.mock("locate-path", () => (paths: string[]) => paths[0]);
 
 const testDir = path.join(fsRoot, "testDir");
 
