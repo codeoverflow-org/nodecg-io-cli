@@ -18,7 +18,7 @@ export const uninstallModule: CommandModule = {
     },
 };
 
-async function uninstall(): Promise<void> {
+export async function uninstall(): Promise<void> {
     logger.info("Uninstalling nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();
