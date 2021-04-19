@@ -1,12 +1,11 @@
 import { ProductionInstallation, writeInstallInfo } from "../installation";
 import {
-    extractNpmPackageTar,
-    createNpmPackageReadStream,
     NpmPackage,
     removeNpmPackage,
     isPackageEquals,
     runNpmInstall,
     buildNpmPackagePath,
+    downloadNpmPackage,
 } from "../npm";
 import { directoryExists, ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
@@ -93,7 +92,7 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
         process.stdout.write("\r" + chalk.dim(text));
     };
 
-    const downloadPromises = pkgs.map((pkg) => fetchSinglePackage(pkg, nodecgIODir).then(updateStatus));
+    const downloadPromises = pkgs.map((pkg) => downloadNpmPackage(pkg, nodecgIODir).then(updateStatus));
     await Promise.all(downloadPromises);
     logger.info(""); // add newline after the progress indicator which always operates on the same line.
 
@@ -108,16 +107,6 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
     }
 
     await saveProgress(state, nodecgIODir, pkgs, true);
-}
-
-/**
- * Fetches and extracts a single package from the official npm registry.
- * @param pkg the package to download
- * @param nodecgIODir the root directory in which the package with the package path will be fetched into
- */
-async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    const tarStream = await createNpmPackageReadStream(pkg);
-    await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
 }
 
 /**

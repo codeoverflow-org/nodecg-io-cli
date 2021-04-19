@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import gunzip = require("gunzip-maybe");
 import tar = require("tar-fs");
-import { executeCommand } from "./fsUtils";
+import { executeCommand, removeDirectory } from "./fsUtils";
 import { exec } from "child_process";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
@@ -15,6 +15,7 @@ const npmRegistryEndpoint = "https://registry.npmjs.org/";
  */
 export interface NpmPackage {
     name: string;
+    // TODO: is simple name still needed?
     simpleName: string; // name that will be used when logging something about the package
     path: string;
     version: string;
@@ -106,7 +107,7 @@ export async function extractNpmPackageTar(
     tarStream: fs.ReadStream,
     nodecgIODir: string,
 ): Promise<void> {
-    const extractStream = tarStream.pipe(gunzip()).pipe(
+    const extractStream = tarStream.pipe(gunzip(3)).pipe(
         tar.extract(buildNpmPackagePath(nodecgIODir, pkg), {
             map: (header) => {
                 // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
@@ -124,6 +125,16 @@ export async function extractNpmPackageTar(
 }
 
 /**
+ * Fetches and extracts a single package from the official npm registry.
+ * @param pkg the package to download
+ * @param nodecgIODir the root directory in which the package with the package path will be fetched into
+ */
+export async function downloadNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
+    const tarStream = await createNpmPackageReadStream(pkg);
+    await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
+}
+
+/**
  * Installs npm production dependencies in the passed path by running npm install --prod in the directory.
  * @param path the path where a package.json is present
  */
@@ -137,7 +148,7 @@ export async function runNpmInstall(path: string): Promise<void> {
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    await fs.promises.rm(buildNpmPackagePath(nodecgIODir, pkg), { recursive: true, force: true });
+    await removeDirectory(buildNpmPackagePath(nodecgIODir, pkg));
 }
 
 /**
