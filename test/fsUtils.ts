@@ -3,6 +3,7 @@ import { directoryExists, ensureDirectory, executeCommand, findNodeCGDirectory, 
 import * as path from "path";
 import * as child_process from "child_process";
 import { fsRoot } from "./testUtils";
+import { logger } from "../src/log";
 
 jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
@@ -112,5 +113,12 @@ describe("executeCommand", () => {
         const spy = jest.spyOn(child_process, "spawn");
         await executeCommand("exit", ["0"]);
         expect(spy.mock.calls[0][2].stdio).toBe("inherit");
+    });
+
+    test("should log the command that gets executed", async () => {
+        const spy = jest.spyOn(logger, "info");
+        await executeCommand("exit", ["0"]);
+        expect(spy).toHaveBeenCalled();
+        expect(spy.mock.calls[0][0]).toContain("exit 0");
     });
 });

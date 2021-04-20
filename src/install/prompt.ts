@@ -12,8 +12,10 @@ import {
     supportedNodeCGIORange,
 } from "./nodecgIOVersions";
 
-interface PromptVersionInput {
+interface PromptInput {
     version: string;
+    useSamples?: boolean;
+    services?: string[];
 }
 
 /**
@@ -26,7 +28,7 @@ interface PromptVersionInput {
 export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
     const versions = await getCompatibleVersions();
 
-    const res = await inquirer.prompt([
+    const promptInput = await inquirer.prompt([
         {
             type: "list",
             name: "version",
@@ -39,26 +41,34 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             type: "confirm",
             name: "useSamples",
             message: "Would you like to use the provided samples?",
-            when: (x: PromptVersionInput) => x.version === developmentVersion,
+            when: (x: PromptInput) => x.version === developmentVersion,
             default: currentInstall !== undefined && currentInstall.dev && currentInstall.useSamples,
         },
         {
             type: "checkbox",
             name: "services",
             message: "Which services do you want to use?",
-            choices: (x: PromptVersionInput) => getServicesForVersion(x.version),
-            when: (x: PromptVersionInput) => x.version !== developmentVersion,
-            default: (x: PromptVersionInput) => {
+            choices: (x: PromptInput) => getServicesForVersion(x.version),
+            when: (x: PromptInput) => x.version !== developmentVersion,
+            default: (x: PromptInput) => {
                 if (!currentInstall || currentInstall?.dev) return;
                 return getServicesFromInstall(currentInstall, x.version);
             },
         },
     ]);
 
-    if (res.version === developmentVersion) {
-        return { ...res, dev: true };
+    return await processPromptInput(promptInput);
+}
+
+export async function processPromptInput(input: PromptInput): Promise<Installation> {
+    if (input.version === developmentVersion) {
+        return { version: input.version, dev: true, useSamples: input.useSamples ?? false };
     } else {
-        return { ...res, dev: false, packages: await buildPackageList(res.version, res.services), services: undefined };
+        return {
+            version: input.version,
+            dev: false,
+            packages: await buildPackageList(input.version, input.services ?? []),
+        };
     }
 }
 

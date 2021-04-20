@@ -15,7 +15,7 @@ export interface DevelopmentInstallation {
     dev: true;
     version: "development";
     useSamples: boolean;
-    commitHash: string;
+    commitHash?: string;
 }
 
 /**
