@@ -59,6 +59,7 @@ export function diffPackages(
 }
 
 // TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
+// TODO: we need to handle monaco-editor and the dashboard... it must be in nodecg-io-core/dashboard/node_modules/monaco-editor, or at least there needs to be a link there?
 
 /**
  * Removes a list of packages from a production nodecg-io install.

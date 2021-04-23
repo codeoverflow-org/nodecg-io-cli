@@ -160,7 +160,8 @@ export function getNpmVersion(): Promise<semver.SemVer | undefined> {
         const child = exec("npm --version", (err, stdout) => {
             if (err) {
                 // not found
-                if (child.exitCode === 127) {
+                // is 127 on unix-like systems and it is exit code 1 on windows
+                if (child.exitCode === 127 || child.exitCode === 1) {
                     resolve(undefined);
                 } else {
                     reject(err);

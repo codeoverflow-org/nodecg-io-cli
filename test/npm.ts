@@ -1,6 +1,12 @@
 import { AxiosPromise, AxiosRequestConfig } from "axios";
-import { getHighestPatchVersion, getMinorVersions, getPackageVersions, removeNpmPackage } from "../src/npm";
-import { createNpmPackageReadStream, extractNpmPackageTar } from "../src/npm";
+import {
+    getHighestPatchVersion,
+    getMinorVersions,
+    getPackageVersions,
+    removeNpmPackage,
+    createNpmPackageReadStream,
+    extractNpmPackageTar,
+} from "../src/npm";
 import { tempDir } from "./testUtils";
 import { promises as fs } from "fs";
 import * as path from "path";
