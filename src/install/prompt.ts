@@ -7,6 +7,7 @@ import {
     corePackage,
     corePackages,
     dashboardPackage,
+    dashboardPath,
     developmentVersion,
     getServicesForVersion,
     supportedNodeCGIORange,
@@ -107,7 +108,7 @@ export async function getCompatibleVersions(includeRange: semver.Range = support
 export async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
     const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
         name: pkgName,
-        path: pkgName === dashboardPackage ? `${corePackage}/dashboard` : pkgName,
+        path: pkgName === dashboardPackage ? dashboardPath : pkgName,
         version: (await getHighestPatchVersion(pkgName, version)) ?? `${version}.0`,
     }));
 

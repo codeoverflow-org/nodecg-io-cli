@@ -2,7 +2,7 @@ import * as npm from "../../src/npm";
 import * as semver from "semver";
 import { getCompatibleVersions, buildPackageList, getServicesFromInstall } from "../../src/install/prompt";
 import { logger } from "../../src/log";
-import { corePackages, dashboardPackage } from "../../src/install/nodecgIOVersions";
+import { corePackage, corePackages, dashboardPackage, dashboardPath } from "../../src/install/nodecgIOVersions";
 import { ProductionInstallation } from "../../src/installation";
 
 describe("getCompatibleVersions", () => {
@@ -42,7 +42,7 @@ describe("buildPackageList", () => {
     });
 
     test("should have correct path for dashboard", async () => {
-        expect(packages.find((pkg) => pkg.name === dashboardPackage)?.path).toBe("nodecg-io-core/dashboard");
+        expect(packages.find((pkg) => pkg.name === dashboardPackage)?.path).toBe(dashboardPath);
     });
 
     test("should have highest version for each package", async () => {
@@ -62,14 +62,14 @@ describe("getServicesFromInstall", () => {
         version: "0.1.0",
         packages: [
             {
-                name: "nodecg-io-core",
+                name: corePackage,
                 version: "0.0.2",
                 path: "nodecg-io-core",
             },
             {
-                name: "nodecg-io-dashboard",
+                name: dashboardPackage,
                 version: "0.0.2",
-                path: "nodecg-io-core/dashboard",
+                path: dashboardPath,
             },
             {
                 name: "nodecg-io-twitch-chat",

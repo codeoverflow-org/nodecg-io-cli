@@ -1,26 +1,9 @@
 import { vol } from "memfs";
-import { fsRoot } from "./testUtils";
+import { fsRoot, cfgDir, nodecgCfgPath, nodecgExampleConfig } from "./testUtils";
 import { manageBundleDir, readNodeCGConfig, writeNodeCGConfig } from "../src/nodecgConfig";
-import * as path from "path";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
-
-const exampleConfig = {
-    bundles: {
-        paths: ["some-custom-bundle-dir"],
-        disabled: ["nodecg-io-debug"],
-    },
-    developer: true,
-    logging: {
-        console: {
-            level: "trace",
-        },
-    },
-};
-
-const configDir = path.join(fsRoot, "cfg");
-const configPath = path.join(configDir, "nodecg.json");
 
 describe("readNodeCGConfig", () => {
     test("should return undefined if config is not already existing", async () => {
@@ -28,36 +11,36 @@ describe("readNodeCGConfig", () => {
     });
 
     test("should read config if existing", async () => {
-        await vol.promises.mkdir(configDir);
-        await vol.promises.writeFile(configPath, JSON.stringify(exampleConfig));
+        await vol.promises.mkdir(cfgDir);
+        await vol.promises.writeFile(nodecgCfgPath, JSON.stringify(nodecgExampleConfig));
 
-        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(exampleConfig);
+        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(nodecgExampleConfig);
     });
 });
 
 describe("writeNodeCGConfig", () => {
     test("should write config and create dirs if needed", async () => {
         // the /cfg directory does not exist and must be created by writeNodeCGConfig
-        await writeNodeCGConfig(fsRoot, exampleConfig);
-        const content = await vol.promises.readFile(configPath);
+        await writeNodeCGConfig(fsRoot, nodecgExampleConfig);
+        const content = await vol.promises.readFile(nodecgCfgPath);
         const json = JSON.parse(content.toString());
-        expect(json).toStrictEqual(exampleConfig);
+        expect(json).toStrictEqual(nodecgExampleConfig);
     });
 });
 
 describe("manageBundleDir", () => {
     // Example config on memfs is modified by tests and thus needs to be written to it
     beforeEach(async () => {
-        await writeNodeCGConfig(fsRoot, exampleConfig);
+        await writeNodeCGConfig(fsRoot, nodecgExampleConfig);
     });
 
     test("should be able add bundle entry from nodecg config", async () => {
         await manageBundleDir(fsRoot, "nodecg-io", true);
 
         await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual({
-            ...exampleConfig,
+            ...nodecgExampleConfig,
             bundles: {
-                ...exampleConfig.bundles,
+                ...nodecgExampleConfig.bundles,
                 paths: ["some-custom-bundle-dir", "nodecg-io"],
             },
         });
@@ -67,9 +50,9 @@ describe("manageBundleDir", () => {
         await manageBundleDir(fsRoot, "some-custom-bundle-dir", false);
 
         await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual({
-            ...exampleConfig,
+            ...nodecgExampleConfig,
             bundles: {
-                ...exampleConfig.bundles,
+                ...nodecgExampleConfig.bundles,
                 paths: [],
             },
         });
@@ -78,12 +61,12 @@ describe("manageBundleDir", () => {
     test("should do nothing if bundle dir was already added", async () => {
         await manageBundleDir(fsRoot, "some-custom-bundle-dir", true); // that is already in there
 
-        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(exampleConfig);
+        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(nodecgExampleConfig);
     });
 
     test("should do nothing if bundle dir was already removed", async () => {
         await manageBundleDir(fsRoot, "nodecg-io", false); // nodecg-io isn't in it already
 
-        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(exampleConfig);
+        await expect(readNodeCGConfig(fsRoot)).resolves.toStrictEqual(nodecgExampleConfig);
     });
 });

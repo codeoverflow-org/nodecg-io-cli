@@ -1,22 +1,12 @@
 import { vol } from "memfs";
-import * as path from "path";
 import * as git from "isomorphic-git";
 import * as fsUtils from "../../src/fsUtils";
-import { fsRoot } from "../testUtils";
+import { fsRoot, validDevInstall, nodecgIODir } from "../testUtils";
 import { createDevInstall, getGitRepo } from "../../src/install/development";
-import { DevelopmentInstallation } from "../../src/installation";
-
-const nodecgIODir = path.join(fsRoot, "nodecg-io");
-const install: DevelopmentInstallation = {
-    dev: true,
-    version: "development",
-    useSamples: false,
-    commitHash: "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
-};
 
 const cloneSpy = jest.spyOn(git, "clone").mockResolvedValue();
 const ffSpy = jest.spyOn(git, "fastForward").mockResolvedValue();
-const refSpy = jest.spyOn(git, "resolveRef").mockResolvedValue(install.commitHash ?? "");
+const refSpy = jest.spyOn(git, "resolveRef").mockResolvedValue(validDevInstall.commitHash ?? "");
 const execSpy = jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
 
 jest.mock("fs", () => vol);
@@ -31,15 +21,15 @@ afterEach(() => {
 
 describe("createDevInstall", () => {
     test("should not do anything if HEAD commit hash didn't change", async () => {
-        await createDevInstall(install, install, fsRoot, 0);
+        await createDevInstall(validDevInstall, validDevInstall, fsRoot, 0);
         expect(execSpy).toHaveBeenCalledTimes(0);
     });
 
     test("should execute install, bootstrap and build", async () => {
         await createDevInstall(
-            install,
+            validDevInstall,
             {
-                ...install,
+                ...validDevInstall,
                 commitHash: "abc",
             },
             fsRoot,

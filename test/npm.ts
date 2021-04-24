@@ -5,20 +5,13 @@ import {
     getPackageVersions,
     removeNpmPackage,
     createNpmPackageReadStream,
-    extractNpmPackageTar,
+    downloadNpmPackage,
 } from "../src/npm";
-import { tempDir } from "./testUtils";
+import { tempDir, invalidPkgName, corePkg } from "./testUtils";
 import { promises as fs } from "fs";
 import * as path from "path";
 import * as fsUtils from "../src/fsUtils";
 
-const validPkgName = "nodecg-io-core";
-const invalidPkgName = "something-hopefully-invalid";
-const pkg = {
-    name: validPkgName,
-    path: validPkgName,
-    version: "0.1.0",
-};
 const versions = ["0.1.0", "0.1.1", "0.1.2", "0.2.0"];
 
 // Very bare-bones version of a real response, we just add fake data that we are using for testing, not everything.
@@ -40,7 +33,7 @@ function handleAxiosNpmRequest(opts: string | AxiosRequestConfig): AxiosPromise<
         return jest.requireActual("axios")(opts);
     } else {
         // We're requesting information about a package, which we do mock.
-        if (url?.endsWith(validPkgName)) {
+        if (url?.endsWith(corePkg.name)) {
             return Promise.resolve({
                 status: 200,
                 statusText: "OK",
@@ -57,7 +50,7 @@ function handleAxiosNpmRequest(opts: string | AxiosRequestConfig): AxiosPromise<
 
 describe("getPackageVersions", () => {
     test("should return all versions", async () => {
-        await expect(getPackageVersions(validPkgName)).resolves.toStrictEqual(versions);
+        await expect(getPackageVersions(corePkg.name)).resolves.toStrictEqual(versions);
     });
 
     test("should error when requesting versions of invalid package", async () => {
@@ -67,26 +60,26 @@ describe("getPackageVersions", () => {
 
 describe("getMinorVersions", () => {
     test("should give de-duplicated minor versions", async () => {
-        await expect(getMinorVersions(validPkgName)).resolves.toStrictEqual(["0.1", "0.2"]);
+        await expect(getMinorVersions(corePkg.name)).resolves.toStrictEqual(["0.1", "0.2"]);
     });
 });
 
 describe("getHighestPatchVersion", () => {
     test("should return the highest version of the passed minor version", async () => {
-        await expect(getHighestPatchVersion(validPkgName, "0.1")).resolves.toStrictEqual("0.1.2");
-        await expect(getHighestPatchVersion(validPkgName, "0.2")).resolves.toStrictEqual("0.2.0");
+        await expect(getHighestPatchVersion(corePkg.name, "0.1")).resolves.toStrictEqual("0.1.2");
+        await expect(getHighestPatchVersion(corePkg.name, "0.2")).resolves.toStrictEqual("0.2.0");
     });
 });
 
 describe("createNpmPackageReadStream", () => {
     test("should successfully create read stream for valid package", async () => {
-        expect(createNpmPackageReadStream(pkg)).resolves.toBeDefined();
+        expect(createNpmPackageReadStream(corePkg)).resolves.toBeDefined();
     });
 
     test("should error if package name is invalid", async () => {
         await expect(
             createNpmPackageReadStream({
-                ...pkg,
+                ...corePkg,
                 name: invalidPkgName,
             }),
         ).rejects.toThrow("404");
@@ -95,7 +88,7 @@ describe("createNpmPackageReadStream", () => {
     test("should error if package version is invalid", async () => {
         await expect(
             createNpmPackageReadStream({
-                ...pkg,
+                ...corePkg,
                 version: "0.0.1",
             }),
         ).rejects.toThrow("404");
@@ -106,20 +99,19 @@ describe("downloadNpmPackage", () => {
     test("should be able to fetch valid version and redirect /package/* content", async () => {
         const d = await tempDir();
 
-        const tarStream = await createNpmPackageReadStream(pkg);
-        await extractNpmPackageTar(pkg, tarStream, d);
+        await downloadNpmPackage(corePkg, d);
 
         // Make sure that it redirects everything from /package/* to /*
-        const packageJsonBuf = await fs.readFile(path.join(d, validPkgName, "package.json"));
+        const packageJsonBuf = await fs.readFile(path.join(d, corePkg.name, "package.json"));
         const packageJson = JSON.parse(packageJsonBuf.toString());
-        expect(packageJson["name"]).toBe(validPkgName);
+        expect(packageJson["name"]).toBe(corePkg.name);
     });
 });
 
 describe("removeNpmPackage", () => {
     test("should call to fsUtils.removeDirectory", async () => {
         const spy = jest.spyOn(fsUtils, "removeDirectory").mockResolvedValue();
-        await removeNpmPackage(pkg, await tempDir());
+        await removeNpmPackage(corePkg, await tempDir());
         expect(spy).toHaveBeenCalled();
     });
 });

@@ -2,13 +2,11 @@ import { createFsFromVolume, vol } from "memfs";
 import { directoryExists, ensureDirectory, executeCommand, findNodeCGDirectory, removeDirectory } from "../src/fsUtils";
 import * as path from "path";
 import * as child_process from "child_process";
-import { fsRoot } from "./testUtils";
+import { testDir } from "./testUtils";
 import { logger } from "../src/log";
 
 jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
-
-const testDir = path.join(fsRoot, "testDir");
 
 describe("findNodeCGDirectory", () => {
     const nodecgDir = path.join(testDir, "nodecg");

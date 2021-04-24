@@ -1,7 +1,9 @@
 import * as semver from "semver";
+import * as path from "path";
 
 export const corePackage = "nodecg-io-core";
 export const dashboardPackage = "nodecg-io-dashboard";
+export const dashboardPath = corePackage + path.sep + "dashboard";
 export const developmentVersion = "development";
 
 export const corePackages = [corePackage, dashboardPackage];
