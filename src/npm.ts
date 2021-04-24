@@ -15,8 +15,6 @@ const npmRegistryEndpoint = "https://registry.npmjs.org/";
  */
 export interface NpmPackage {
     name: string;
-    // TODO: is simple name still needed?
-    simpleName: string; // name that will be used when logging something about the package
     path: string;
     version: string;
 }
@@ -26,7 +24,7 @@ export interface NpmPackage {
  * @returns
  */
 export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
-    return a.name === b.name && a.path === b.path && a.version === b.version && a.simpleName === b.simpleName;
+    return a.name === b.name && a.path === b.path && a.version === b.version;
 }
 
 /**

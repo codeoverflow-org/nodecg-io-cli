@@ -16,7 +16,6 @@ const validPkgName = "nodecg-io-core";
 const invalidPkgName = "something-hopefully-invalid";
 const pkg = {
     name: validPkgName,
-    simpleName: "core",
     path: validPkgName,
     version: "0.1.0",
 };
@@ -119,7 +118,7 @@ describe("downloadNpmPackage", () => {
 
 describe("removeNpmPackage", () => {
     test("should call to fsUtils.removeDirectory", async () => {
-        const spy = jest.spyOn(fsUtils, "removeDirectory").mockReturnValue(Promise.resolve());
+        const spy = jest.spyOn(fsUtils, "removeDirectory").mockResolvedValue();
         await removeNpmPackage(pkg, await tempDir());
         expect(spy).toHaveBeenCalled();
     });

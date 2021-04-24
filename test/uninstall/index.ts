@@ -10,7 +10,7 @@ afterEach(() => vol.reset());
 
 const nodecgIODir = path.join(fsRoot, "nodecg-io");
 
-jest.spyOn(fsUtils, "findNodeCGDirectory").mockReturnValue(Promise.resolve(fsRoot));
+jest.spyOn(fsUtils, "findNodeCGDirectory").mockResolvedValue(fsRoot);
 const spyManageBundleDir = jest.spyOn(nodecgConfig, "manageBundleDir");
 const spyRemoveDirectory = jest.spyOn(fsUtils, "removeDirectory");
 
