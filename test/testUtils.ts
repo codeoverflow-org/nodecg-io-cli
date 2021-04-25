@@ -1,7 +1,7 @@
 import * as temp from "temp";
 import { corePackage } from "../src/install/nodecgIOVersions";
 import * as path from "path";
-import { DevelopmentInstallation } from "../src/installation";
+import { DevelopmentInstallation, ProductionInstallation } from "../src/installation";
 
 /**
  * The root directory of memfs. Differs on unix-like and windows systems.
@@ -14,6 +14,11 @@ export const invalidPkgName = "something-hopefully-invalid";
 export const corePkg = {
     name: corePackage,
     path: corePackage,
+    version: "0.1.0",
+};
+export const twitchChatPkg = {
+    name: "nodecg-io-twitch-chat",
+    path: "nodecg-io-twitch-chat",
     version: "0.1.0",
 };
 export const nodecgExampleConfig = {
@@ -36,6 +41,11 @@ export const validDevInstall: DevelopmentInstallation = {
     version: "development",
     useSamples: false,
     commitHash: "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
+};
+export const validProdInstall: ProductionInstallation = {
+    dev: false,
+    version: "0.1.0",
+    packages: [],
 };
 export const testDir = path.join(fsRoot, "testDir");
 export const nodecgIODir = path.join(fsRoot, "nodecg-io");

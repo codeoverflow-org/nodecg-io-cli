@@ -2,8 +2,9 @@ import * as npm from "../../src/npm";
 import * as semver from "semver";
 import { getCompatibleVersions, buildPackageList, getServicesFromInstall } from "../../src/install/prompt";
 import { logger } from "../../src/log";
-import { corePackage, corePackages, dashboardPackage, dashboardPath } from "../../src/install/nodecgIOVersions";
+import { corePackages, dashboardPackage, dashboardPath } from "../../src/install/nodecgIOVersions";
 import { ProductionInstallation } from "../../src/installation";
+import { corePkg, twitchChatPkg } from "../testUtils";
 
 describe("getCompatibleVersions", () => {
     const mock = jest.spyOn(npm, "getMinorVersions").mockResolvedValue(["0.1", "0.2", "1.0", "1.1"]);
@@ -62,9 +63,8 @@ describe("getServicesFromInstall", () => {
         version: "0.1.0",
         packages: [
             {
-                name: corePackage,
+                ...corePkg,
                 version: "0.0.2",
-                path: "nodecg-io-core",
             },
             {
                 name: dashboardPackage,
@@ -72,9 +72,8 @@ describe("getServicesFromInstall", () => {
                 path: dashboardPath,
             },
             {
-                name: "nodecg-io-twitch-chat",
+                ...twitchChatPkg,
                 version: "0.0.1",
-                path: "nodecg-io-twitch-chat",
             },
             {
                 name: "nodecg-io-testSvc",

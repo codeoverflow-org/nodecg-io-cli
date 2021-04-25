@@ -67,7 +67,11 @@ export function diffPackages(
  * @param state the current installation info that will be updated with the removals
  * @param nodecgIODir the nodecg-io directory in which the packages will be removed
  */
-async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function removePackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
@@ -83,7 +87,11 @@ async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation,
  * @param state the current install state that will be updated with the newly added packages
  * @param nodecgIODir the directory in which nodecg-io is installed an and the new packages should be installed into
  */
-async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function installPackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     const count = pkgs.length;
     logger.info(`Downloading ${count} packages...`);
 
@@ -167,7 +175,7 @@ async function saveProgress(
  * @param state the current install
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
-async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const pkgs = state.packages;
     const p = pkgs.map(async (pkg) => {
         const pkgPath = buildNpmPackagePath(nodecgIODir, pkg);
