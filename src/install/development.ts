@@ -16,7 +16,7 @@ export async function createDevInstall(
 ): Promise<void> {
     await getGitRepo(nodecgIODir);
     requested.commitHash = await getGitCommitHash(nodecgIODir);
-    if (requested.commitHash === current?.commitHash) {
+    if (current && requested.commitHash === current?.commitHash) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
         return;
     }
@@ -32,7 +32,7 @@ export async function createDevInstall(
  * if already existent, by pulling.
  * @param nodecgIODir the directory in which nodecg-io should be downloaded to
  */
-async function getGitRepo(nodecgIODir: string): Promise<void> {
+export async function getGitRepo(nodecgIODir: string): Promise<void> {
     if (await directoryExists(nodecgIODir)) {
         await pullRepo(nodecgIODir);
     } else {

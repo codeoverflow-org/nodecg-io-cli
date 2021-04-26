@@ -7,8 +7,11 @@ import { logger } from "./log";
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
-export async function findNodeCGDirectory(): Promise<string> {
-    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), { type: "directory" });
+export async function findNodeCGDirectory(cwd = process.cwd()): Promise<string> {
+    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), {
+        type: "directory",
+        cwd,
+    });
     if (res === undefined) {
         throw new Error(
             "Couldn't find a nodecg installation. Make sure that you are in the directory of your nodecg installation.",
@@ -59,7 +62,7 @@ export async function directoryExists(dir: string): Promise<boolean> {
 }
 
 /**
- * Ensures that teh specified directory exists.
+ * Ensures that the specified directory exists.
  * If it is already existing nothing is done and if it doesn't it will be created.
  * @param dir the directory that should be ensured to exist.
  */
@@ -74,7 +77,25 @@ export async function ensureDirectory(dir: string): Promise<void> {
  * @param dirPath the directory which should be deleted.
  */
 export async function removeDirectory(dirPath: string): Promise<void> {
-    await fs.rm(dirPath, { recursive: true, force: true });
+    // Delete all contents of this directory because otherwise we cannot remove it (why can't that be part of fs, oh node 14+ only...)
+    const contents = await fs.readdir(dirPath); // get entries of directory
+
+    const rmPromises = contents.map(async (f) => {
+        const subpath = path.join(dirPath, f);
+        const stat = await fs.stat(subpath);
+
+        // rm if file and use this function recursively if directory
+        if (stat.isDirectory()) {
+            await removeDirectory(subpath);
+        } else {
+            await fs.unlink(subpath);
+        }
+    });
+
+    await Promise.all(rmPromises);
+
+    // now that the directory is empty we can delete it.
+    await fs.rmdir(dirPath);
 }
 
 /**
@@ -114,7 +135,7 @@ export async function executeCommand(command: string, args: string[], workingDir
                     reject(new Error("cli has been interrupted!"));
                 }
 
-                reject(`Command "${command} ${args.join(" ")}" returned error code ${code}!`);
+                reject(new Error(`Command "${command} ${args.join(" ")}" returned error code ${code}!`));
             }
         });
     });

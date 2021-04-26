@@ -1,12 +1,11 @@
 import { ProductionInstallation, writeInstallInfo } from "../installation";
 import {
-    extractNpmPackageTar,
-    createNpmPackageReadStream,
     NpmPackage,
     removeNpmPackage,
     isPackageEquals,
     runNpmInstall,
     buildNpmPackagePath,
+    downloadNpmPackage,
 } from "../npm";
 import { directoryExists, ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
@@ -60,6 +59,7 @@ export function diffPackages(
 }
 
 // TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
+// TODO: we need to handle monaco-editor and the dashboard... it must be in nodecg-io-core/dashboard/node_modules/monaco-editor, or at least there needs to be a link there?
 
 /**
  * Removes a list of packages from a production nodecg-io install.
@@ -67,7 +67,11 @@ export function diffPackages(
  * @param state the current installation info that will be updated with the removals
  * @param nodecgIODir the nodecg-io directory in which the packages will be removed
  */
-async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function removePackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
@@ -83,7 +87,11 @@ async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation,
  * @param state the current install state that will be updated with the newly added packages
  * @param nodecgIODir the directory in which nodecg-io is installed an and the new packages should be installed into
  */
-async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function installPackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     const count = pkgs.length;
     logger.info(`Downloading ${count} packages...`);
 
@@ -93,7 +101,7 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
         process.stdout.write("\r" + chalk.dim(text));
     };
 
-    const downloadPromises = pkgs.map((pkg) => fetchSinglePackage(pkg, nodecgIODir).then(updateStatus));
+    const downloadPromises = pkgs.map((pkg) => downloadNpmPackage(pkg, nodecgIODir).then(updateStatus));
     await Promise.all(downloadPromises);
     logger.info(""); // add newline after the progress indicator which always operates on the same line.
 
@@ -108,16 +116,6 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
     }
 
     await saveProgress(state, nodecgIODir, pkgs, true);
-}
-
-/**
- * Fetches and extracts a single package from the official npm registry.
- * @param pkg the package to download
- * @param nodecgIODir the root directory in which the package with the package path will be fetched into
- */
-async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    const tarStream = await createNpmPackageReadStream(pkg);
-    await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
 }
 
 /**
@@ -177,7 +175,7 @@ async function saveProgress(
  * @param state the current install
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
-async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const pkgs = state.packages;
     const p = pkgs.map(async (pkg) => {
         const pkgPath = buildNpmPackagePath(nodecgIODir, pkg);

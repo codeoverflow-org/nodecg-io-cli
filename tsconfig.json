@@ -1,14 +1,14 @@
 {
     "compilerOptions": {
         // Output related
-        "target": "es2017",
-        "importHelpers": true,
+        "target": "es2019",
+        "sourceMap": true,
 
         // Module resolution
         "moduleResolution": "node",
 
         // Type checking
-        "lib": ["es2017"],
+        "lib": ["es2019"],
         "alwaysStrict": true,
         "forceConsistentCasingInFileNames": true,
         "noFallthroughCasesInSwitch": true,
@@ -19,8 +19,6 @@
         "skipLibCheck": true,
 
         "module": "CommonJS",
-        "types": ["node"],
-
         "outDir": "build"
     },
     "include": ["src/**/*"],
