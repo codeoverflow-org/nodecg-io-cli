@@ -6,6 +6,7 @@ import {
     runNpmInstall,
     buildNpmPackagePath,
     downloadNpmPackage,
+    createNpmSymlinks,
 } from "../npm";
 import { directoryExists, ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
@@ -59,7 +60,6 @@ export function diffPackages(
 }
 
 // TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
-// TODO: we need to handle monaco-editor and the dashboard... it must be in nodecg-io-core/dashboard/node_modules/monaco-editor, or at least there needs to be a link there?
 
 /**
  * Removes a list of packages from a production nodecg-io install.
@@ -115,7 +115,17 @@ export async function installPackages(
         throw e;
     }
 
+    await createSymlinks(pkgs, nodecgIODir);
     await saveProgress(state, nodecgIODir, pkgs, true);
+}
+
+/**
+ * Creates the symlinks for all non-hoisted packages. (E.g. monaco-editor for the dashboard)
+ */
+async function createSymlinks(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    logger.debug("Creating symlinks...");
+    await createNpmSymlinks(pkgs, nodecgIODir);
+    logger.debug("Successfully created symlinks.");
 }
 
 /**
@@ -178,7 +188,7 @@ async function saveProgress(
 export async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const pkgs = state.packages;
     const p = pkgs.map(async (pkg) => {
-        const pkgPath = buildNpmPackagePath(nodecgIODir, pkg);
+        const pkgPath = buildNpmPackagePath(pkg, nodecgIODir);
         if (!(await directoryExists(pkgPath))) {
             // package is not at the expected location, it may have been deleted by the user.
             // Remove from current state.

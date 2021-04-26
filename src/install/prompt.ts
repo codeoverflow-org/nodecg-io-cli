@@ -106,10 +106,12 @@ export async function getCompatibleVersions(includeRange: semver.Range = support
  * @returns resolved packages with the most up to date patch version.
  */
 export async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
+    // TODO: split this into multiple methods
     const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
         name: pkgName,
         path: pkgName === dashboardPackage ? dashboardPath : pkgName,
         version: (await getHighestPatchVersion(pkgName, version)) ?? `${version}.0`,
+        symlink: pkgName === dashboardPackage ? ["monaco-editor"] : undefined,
     }));
 
     return await Promise.all(promises);
