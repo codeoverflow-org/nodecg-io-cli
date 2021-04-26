@@ -8,6 +8,7 @@ import { executeCommand, removeDirectory } from "./fsUtils";
 import { exec } from "child_process";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
+const nodeModulesDir = "node_modules";
 
 /**
  * Information about a npm package that will be fetched by a prod install with name, installed version
@@ -17,6 +18,13 @@ export interface NpmPackage {
     name: string;
     path: string;
     version: string;
+    /**
+     * Some package require a direct link to another package in their node_modules directory because
+     * e.g. they are getting it through a direct path and don't use the node module resolution algorithm
+     * which allows hoisting packages. In this case for each package in the symlink array there will be a
+     * symlink in the local node_modules pointing to the hoisted version of these packages.
+     */
+    symlink?: string[];
 }
 
 /**
@@ -24,7 +32,8 @@ export interface NpmPackage {
  * @returns
  */
 export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
-    return a.name === b.name && a.path === b.path && a.version === b.version;
+    const symlinkEq = a.symlink?.every((elem, idx) => b.symlink?.[idx] === elem) ?? a.symlink === b.symlink;
+    return a.name === b.name && a.path === b.path && a.version === b.version && symlinkEq;
 }
 
 /**
@@ -76,7 +85,7 @@ function buildNpmPackageURL(pkg: NpmPackage): string {
 /**
  * Builds the path where this package should be installed to.
  */
-export function buildNpmPackagePath(nodecgIODir: string, pkg: NpmPackage): string {
+export function buildNpmPackagePath(pkg: NpmPackage, nodecgIODir: string): string {
     return path.join(nodecgIODir, pkg.path);
 }
 
@@ -106,7 +115,7 @@ export async function extractNpmPackageTar(
     nodecgIODir: string,
 ): Promise<void> {
     const extractStream = tarStream.pipe(gunzip(3)).pipe(
-        tar.extract(buildNpmPackagePath(nodecgIODir, pkg), {
+        tar.extract(buildNpmPackagePath(pkg, nodecgIODir), {
             map: (header) => {
                 // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
                 // named package in each downloaded package directory.
@@ -141,12 +150,39 @@ export async function runNpmInstall(path: string): Promise<void> {
 }
 
 /**
+ * Creates symlinks for packages that cannot be hoisted and must be in the local node_modules directory.
+ * Refer to NpmPackage.symlink for further information.
+ * @param packages the packages which you have installed and where the symlinks should be created.
+ * @param nodecgIODir the root directory which also includes a node_modules directory with the hoisted packages.
+ */
+export async function createNpmSymlinks(packages: NpmPackage[], nodecgIODir: string): Promise<void> {
+    const linkPromises = packages
+        .map((pkg) => {
+            // We don't need any symlinks and can them for this package
+            if (!pkg.symlink) return [];
+
+            return pkg.symlink.map(async (linkPkg) => {
+                const pkgNodeModules = path.join(buildNpmPackagePath(pkg, nodecgIODir), nodeModulesDir);
+                await fs.promises.mkdir(pkgNodeModules);
+
+                const linkModulePath = path.join(pkgNodeModules, linkPkg);
+                const hoistedPath = path.join(nodecgIODir, nodeModulesDir, linkPkg);
+
+                await fs.promises.symlink(hoistedPath, linkModulePath, "junction");
+            });
+        })
+        .flat();
+
+    await Promise.all(linkPromises);
+}
+
+/**
  * Removes a npm package by deleting its directory.
  * @param pkg the package to remove
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    await removeDirectory(buildNpmPackagePath(nodecgIODir, pkg));
+    await removeDirectory(buildNpmPackagePath(pkg, nodecgIODir));
 }
 
 /**
