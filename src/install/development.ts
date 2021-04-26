@@ -16,7 +16,7 @@ export async function createDevInstall(
 ): Promise<void> {
     await getGitRepo(nodecgIODir);
     requested.commitHash = await getGitCommitHash(nodecgIODir);
-    if (requested.commitHash === current?.commitHash) {
+    if (current && requested.commitHash === current?.commitHash) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
         return;
     }
