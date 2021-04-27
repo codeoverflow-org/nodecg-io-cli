@@ -6,6 +6,7 @@
 
         // Module resolution
         "moduleResolution": "node",
+        "resolveJsonModule": true,
 
         // Type checking
         "lib": ["es2019"],
