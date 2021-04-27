@@ -1,16 +1,30 @@
-import { AxiosRequestConfig, AxiosPromise } from "axios";
+import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from "axios";
 import { getHighestPatchVersion, getMinorVersions, getPackageVersions } from "../../src/npm";
-import { corePkg, invalidPkgName } from "../testUtils";
+import { corePkg, invalidPkgName, twitchChatPkg } from "../testUtils";
 
 const versions = ["0.1.0", "0.1.1", "0.1.2", "0.2.0"];
 
 // Very bare-bones version of a real response, we just add fake data that we are using for testing, not everything.
-const fakeCoreNpmResponse = {
-    name: "nodecg-io-core",
+const fakeCoreNpmResponseData = {
+    name: corePkg.name,
     "dist-tags": {
         latest: "0.2.0",
     },
     versions: Object.fromEntries(versions.map((v) => [v, {}])),
+};
+
+// Test for a unpublished package (here twitch-chat)
+const fakeTwitchNpmResponseData = {
+    name: twitchChatPkg.name,
+    // oh no, there is no version field here
+};
+
+const fakeCoreNpmResponse: AxiosResponse<typeof fakeCoreNpmResponseData> = {
+    status: 200,
+    statusText: "OK",
+    data: fakeCoreNpmResponseData,
+    headers: undefined,
+    config: {},
 };
 
 jest.mock("axios", () => ({ default: handleAxiosNpmRequest }));
@@ -20,12 +34,12 @@ function handleAxiosNpmRequest(opts: string | AxiosRequestConfig): AxiosPromise<
 
     if (url?.endsWith(corePkg.name)) {
         // core (for testing purposes valid) => return valid info
+        return Promise.resolve(fakeCoreNpmResponse);
+    } else if (url?.endsWith(twitchChatPkg.name)) {
+        // unpublished version => don't return versions field
         return Promise.resolve({
-            status: 200,
-            statusText: "OK",
-            data: fakeCoreNpmResponse,
-            headers: undefined,
-            config: {},
+            ...fakeCoreNpmResponse,
+            data: fakeTwitchNpmResponseData,
         });
     } else {
         // invalid package => 404
@@ -40,6 +54,10 @@ describe("getPackageVersions", () => {
 
     test("should error when requesting versions of invalid package", async () => {
         await expect(getPackageVersions(invalidPkgName)).rejects.toThrowError();
+    });
+
+    test("should error when requesting versions of a unpublished package", async () => {
+        await expect(getPackageVersions(twitchChatPkg.name)).rejects.toThrowError("no published version");
     });
 });
 
