@@ -43,7 +43,13 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
  */
 export async function getPackageVersions(packageName: string): Promise<string[]> {
     const response = await axios(npmRegistryEndpoint + packageName);
-    return Object.keys(response.data.versions);
+    if (response.data.versions) {
+        return Object.keys(response.data.versions);
+    } else {
+        // Version field is missing when e.g. the package has been fully unpublished
+        // see https://www.npmjs.com/policies/unpublish for further details.
+        throw new Error("package has no published versions.");
+    }
 }
 
 /**
