@@ -16,6 +16,7 @@ import {
 interface PromptInput {
     version: string;
     useSamples?: boolean;
+    cloneDocs?: boolean;
     services?: string[];
 }
 
@@ -29,6 +30,9 @@ interface PromptInput {
 export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
     const versions = await getCompatibleVersions();
 
+    const currentProd = currentInstall !== undefined && !currentInstall.dev ? currentInstall : undefined;
+    const currentDev = currentInstall !== undefined && currentInstall.dev ? currentInstall : undefined;
+
     const promptInput = await inquirer.prompt([
         {
             type: "list",
@@ -38,13 +42,22 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             loop: false,
             default: currentInstall?.version ?? versions.slice(-1)[0],
         },
+        // Options for development installs
         {
             type: "confirm",
             name: "useSamples",
             message: "Would you like to use the provided samples?",
             when: (x: PromptInput) => x.version === developmentVersion,
-            default: currentInstall !== undefined && currentInstall.dev && currentInstall.useSamples,
+            default: currentDev?.useSamples ?? false,
         },
+        {
+            type: "confirm",
+            name: "cloneDocs",
+            message: "Would you like to clone the documentation?",
+            when: (x: PromptInput) => x.version === developmentVersion,
+            default: currentDev?.cloneDocs ?? true,
+        },
+        // Options for production installs
         {
             type: "checkbox",
             name: "services",
@@ -52,8 +65,8 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             choices: (x: PromptInput) => getServicesForVersion(x.version),
             when: (x: PromptInput) => x.version !== developmentVersion,
             default: (x: PromptInput) => {
-                if (!currentInstall || currentInstall?.dev) return;
-                return getServicesFromInstall(currentInstall, x.version);
+                if (!currentProd) return;
+                return getServicesFromInstall(currentProd, x.version);
             },
         },
     ]);
@@ -63,7 +76,12 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
 
 export async function processPromptInput(input: PromptInput): Promise<Installation> {
     if (input.version === developmentVersion) {
-        return { version: input.version, dev: true, useSamples: input.useSamples ?? false };
+        return {
+            version: input.version,
+            dev: true,
+            useSamples: input.useSamples ?? false,
+            cloneDocs: input.cloneDocs ?? false,
+        };
     } else {
         return {
             version: input.version,

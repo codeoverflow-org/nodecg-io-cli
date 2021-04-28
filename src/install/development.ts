@@ -2,11 +2,14 @@ import chalk = require("chalk");
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import * as http from "isomorphic-git/http/node";
-import { directoryExists, executeCommand } from "../fsUtils";
+import { directoryExists, executeCommand, removeDirectory } from "../fsUtils";
 import { DevelopmentInstallation, writeInstallInfo } from "../installation";
 import { logger } from "../log";
+import * as path from "path";
 
+type CloneRepository = "nodecg-io" | "nodecg-io-docs";
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
+const nodecgIODocsCloneURL = "https://github.com/codeoverflow-org/nodecg-io-docs.git";
 
 export async function createDevInstall(
     requested: DevelopmentInstallation,
@@ -14,10 +17,14 @@ export async function createDevInstall(
     nodecgIODir: string,
     concurrency: number,
 ): Promise<void> {
-    await getGitRepo(nodecgIODir);
+    await getGitRepo(nodecgIODir, "nodecg-io");
+    await manageDocs(nodecgIODir, requested.cloneDocs);
+
     requested.commitHash = await getGitCommitHash(nodecgIODir);
     if (current && requested.commitHash === current?.commitHash) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
+        // useSamples or cloneDocs might have changed and need to be saved, even if not building nodecg-io
+        await writeInstallInfo(nodecgIODir, requested);
         return;
     }
 
@@ -28,41 +35,64 @@ export async function createDevInstall(
 }
 
 /**
- * Ensures that the current version of nodecg-io is in the passed directory by either cloning the repository or,
- * if already existent, by pulling.
- * @param nodecgIODir the directory in which nodecg-io should be downloaded to
+ * Ensures that docs are cloned and up to date if they are wanted and removes them, if existing, if they are not requested.
+ * @param nodecgIODir the directory in which nodecg-io is installed
+ * @param cloneDocs whether the docs should be cloned or not
  */
-export async function getGitRepo(nodecgIODir: string): Promise<void> {
-    if (await directoryExists(nodecgIODir)) {
-        await pullRepo(nodecgIODir);
-    } else {
-        await cloneRepo(nodecgIODir);
+async function manageDocs(nodecgIODir: string, cloneDocs: boolean): Promise<void> {
+    const docsPath = path.join(nodecgIODir, "docs");
+    if (cloneDocs) {
+        // Docs are wanted so we clone/pull them.
+        await getGitRepo(docsPath, "nodecg-io-docs");
+    } else if (await directoryExists(docsPath)) {
+        // Docs are not wanted but exists (they probably were selected previously) => delete
+        await removeDirectory(docsPath);
     }
 }
 
-async function pullRepo(nodecgIODir: string): Promise<void> {
-    logger.debug("nodecg-io git repository is already cloned.");
-    logger.info("Pulling latest changes...");
+/**
+ * Ensures that the current version of nodecg-io/nodecg-io-docs repo is in the passed directory by either cloning the repository or,
+ * if already existent, by pulling.
+ * @param path the directory to which the repo should be downloaded.
+ */
+export async function getGitRepo(repoPath: string, repo: CloneRepository): Promise<void> {
+    const isDocs = repo === "nodecg-io-docs";
+    const gitUrl = isDocs ? nodecgIODocsCloneURL : nodecgIOCloneURL;
 
-    await git.fastForward({ fs, http, url: nodecgIOCloneURL, dir: nodecgIODir, onProgress: renderGitProgress() });
-
-    logger.info(""); // finish progress line
-    logger.info("Successfully pulled latest changes from GitHub.");
+    if (await directoryExists(repoPath)) {
+        await pullRepo(repoPath, repo, gitUrl);
+    } else {
+        await cloneRepo(repoPath, repo, gitUrl);
+    }
 }
 
-async function cloneRepo(nodecgIODir: string): Promise<void> {
-    logger.info("Cloning nodecg-io git repository...");
+async function pullRepo(_directory: string, _repo: CloneRepository, _url: string): Promise<void> {
+    // TODO: fix pull. Because we have symlinked and tremendous node_modules directories
+    // walking the fs takes waaay too long. Shouldn't isomorphic-git ignore them because they are in the .gitignore?
+    // logger.debug(`${repo} git repository is already cloned.`);
+    // logger.info("Pulling latest changes...");
+    // await git.fastForward(buildGitOpts(directory, url));
+    // logger.info(""); // finish progress line
+    // logger.info(`Successfully pulled latest changes from GitHub for ${repo}.`);
+}
 
-    await git.clone({
-        fs,
-        http,
-        dir: nodecgIODir,
-        url: nodecgIOCloneURL,
-        onProgress: renderGitProgress(),
-    });
+async function cloneRepo(directory: string, repo: CloneRepository, url: string): Promise<void> {
+    logger.info(`Cloning ${repo} git repository...`);
+
+    await git.clone(buildGitOpts(directory, url));
     logger.info(""); // finish progress line
 
-    logger.info("Cloned nodecg-io git repository.");
+    logger.info(`Cloned ${repo} git repository.`);
+}
+
+function buildGitOpts(directory: string, url: string) {
+    return {
+        fs,
+        http,
+        url,
+        dir: directory,
+        onProgress: renderGitProgress(),
+    };
 }
 
 function renderGitProgress(): git.ProgressCallback {
