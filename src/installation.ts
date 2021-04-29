@@ -16,7 +16,6 @@ export interface DevelopmentInstallation {
     version: "development";
     useSamples: boolean;
     cloneDocs: boolean;
-    commitHash?: string;
 }
 
 /**

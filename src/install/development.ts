@@ -14,17 +14,14 @@ const nodecgIODocsCloneURL = "https://github.com/codeoverflow-org/nodecg-io-docs
 
 export async function createDevInstall(
     requested: DevelopmentInstallation,
-    current: DevelopmentInstallation | undefined,
     nodecgIODir: string,
     concurrency: number,
 ): Promise<void> {
-    await getGitRepo(nodecgIODir, "nodecg-io");
+    const wasRepoUpdated = await getGitRepo(nodecgIODir, "nodecg-io");
     await manageDocs(nodecgIODir, requested.cloneDocs);
 
-    // TODO: don't save commit hash in install.json. If FETCH_HEAD differs from HEAD in pull we got new commits
-    // we should use that as a source for updates instead of saving the hash which may get out of sync.
-    requested.commitHash = await getGitCommitHash(nodecgIODir);
-    if (current && requested.commitHash === current?.commitHash) {
+    console.log(wasRepoUpdated);
+    if (wasRepoUpdated === false) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
         // useSamples or cloneDocs might have changed and need to be saved, even if not building nodecg-io
         await writeInstallInfo(nodecgIODir, requested);
@@ -58,29 +55,30 @@ async function manageDocs(nodecgIODir: string, cloneDocs: boolean): Promise<void
  * Ensures that the current version of nodecg-io/nodecg-io-docs repo is in the passed directory by either cloning the repository or,
  * if already existent, by pulling.
  * @param path the directory to which the repo should be downloaded.
+ * @returns true if there were any new changes (cloned or pulled with new commits) and false if nothing changed (pull but already up to date)
  */
-export async function getGitRepo(repoPath: string, repo: CloneRepository): Promise<void> {
+export async function getGitRepo(repoPath: string, repo: CloneRepository): Promise<boolean> {
     const isDocs = repo === "nodecg-io-docs";
     const gitUrl = isDocs ? nodecgIODocsCloneURL : nodecgIOCloneURL;
 
     if (await directoryExists(repoPath)) {
-        await pullRepo(repoPath, repo, gitUrl);
+        return await pullRepo(repoPath, repo, gitUrl);
     } else {
         await cloneRepo(repoPath, repo, gitUrl);
+        return true;
     }
 }
 
-async function pullRepo(directory: string, repo: CloneRepository, url: string): Promise<void> {
+async function pullRepo(directory: string, repo: CloneRepository, url: string): Promise<boolean> {
     logger.debug(`${repo} git repository is already cloned.`);
     logger.info("Pulling latest changes...");
 
     const currentCommit = await getGitCommitHash(directory);
     const fetchResult = await git.fetch(buildGitOpts(directory, url));
-    if (fetchResult.fetchHead === null) return;
 
-    if (fetchResult.fetchHead === currentCommit) {
+    if (fetchResult.fetchHead === null || fetchResult.fetchHead === currentCommit) {
         logger.info(`No new changes for ${repo}.`);
-        return;
+        return false;
     }
 
     // There are changes that we now need to fast-forward and checkout
@@ -97,7 +95,7 @@ async function pullRepo(directory: string, repo: CloneRepository, url: string): 
         // isomorphic-git is far from perfect and has some problems compared to libgit2.
         // One of them is that when performing a checkout it will always walk the whole working directory
         // INCLUDING gitignored directories like node_modules.
-        // Because of the tremendous size of node_modules(thx dependency hell) in combination with all the symlinks of it
+        // Because of the tremendous size of node_modules in combination with all the symlinks of it
         // this would result in far more than 500000 file checks which is waaaay tooo sloooow.
         // To work around this we remove the node_modules directories if we need to perform a checkout
         // and live with the "small" (in comparison) performance penalty of needing to re-install all node dependencies
@@ -110,6 +108,7 @@ async function pullRepo(directory: string, repo: CloneRepository, url: string): 
 
     logger.info(""); // finish progress line
     logger.info(`Successfully pulled latest changes from GitHub for ${repo}.`);
+    return true;
 }
 
 /**

@@ -41,7 +41,6 @@ export const validDevInstall: DevelopmentInstallation = {
     version: "development",
     useSamples: false,
     cloneDocs: false,
-    commitHash: "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
 };
 export const validProdInstall: ProductionInstallation = {
     dev: false,
