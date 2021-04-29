@@ -6,6 +6,7 @@ import { directoryExists, executeCommand, removeDirectory } from "../fsUtils";
 import { DevelopmentInstallation, writeInstallInfo } from "../installation";
 import { logger } from "../log";
 import * as path from "path";
+import * as glob from "glob";
 
 type CloneRepository = "nodecg-io" | "nodecg-io-docs";
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
@@ -20,6 +21,8 @@ export async function createDevInstall(
     await getGitRepo(nodecgIODir, "nodecg-io");
     await manageDocs(nodecgIODir, requested.cloneDocs);
 
+    // TODO: don't save commit hash in install.json. If FETCH_HEAD differs from HEAD in pull we got new commits
+    // we should use that as a source for updates instead of saving the hash which may get out of sync.
     requested.commitHash = await getGitCommitHash(nodecgIODir);
     if (current && requested.commitHash === current?.commitHash) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
@@ -46,6 +49,7 @@ async function manageDocs(nodecgIODir: string, cloneDocs: boolean): Promise<void
         await getGitRepo(docsPath, "nodecg-io-docs");
     } else if (await directoryExists(docsPath)) {
         // Docs are not wanted but exists (they probably were selected previously) => delete
+        logger.debug("Removing docs...");
         await removeDirectory(docsPath);
     }
 }
@@ -66,14 +70,68 @@ export async function getGitRepo(repoPath: string, repo: CloneRepository): Promi
     }
 }
 
-async function pullRepo(_directory: string, _repo: CloneRepository, _url: string): Promise<void> {
-    // TODO: fix pull. Because we have symlinked and tremendous node_modules directories
-    // walking the fs takes waaay too long. Shouldn't isomorphic-git ignore them because they are in the .gitignore?
-    // logger.debug(`${repo} git repository is already cloned.`);
-    // logger.info("Pulling latest changes...");
-    // await git.fastForward(buildGitOpts(directory, url));
-    // logger.info(""); // finish progress line
-    // logger.info(`Successfully pulled latest changes from GitHub for ${repo}.`);
+async function pullRepo(directory: string, repo: CloneRepository, url: string): Promise<void> {
+    logger.debug(`${repo} git repository is already cloned.`);
+    logger.info("Pulling latest changes...");
+
+    const currentCommit = await getGitCommitHash(directory);
+    const fetchResult = await git.fetch(buildGitOpts(directory, url));
+    if (fetchResult.fetchHead === null) return;
+
+    if (fetchResult.fetchHead === currentCommit) {
+        logger.info(`No new changes for ${repo}.`);
+        return;
+    }
+
+    // There are changes that we now need to fast-forward and checkout
+
+    // fast-forward
+    await git.merge({
+        ...buildGitOpts(directory, url),
+        ours: currentCommit,
+        theirs: fetchResult.fetchHead,
+        fastForwardOnly: true,
+    });
+
+    if (repo === "nodecg-io") {
+        // isomorphic-git is far from perfect and has some problems compared to libgit2.
+        // One of them is that when performing a checkout it will always walk the whole working directory
+        // INCLUDING gitignored directories like node_modules.
+        // Because of the tremendous size of node_modules(thx dependency hell) in combination with all the symlinks of it
+        // this would result in far more than 500000 file checks which is waaaay tooo sloooow.
+        // To work around this we remove the node_modules directories if we need to perform a checkout
+        // and live with the "small" (in comparison) performance penalty of needing to re-install all node dependencies
+        // even if only a small subset or nothing changed. Since this is only done when manually updating and only
+        // if any new commits were fetched this is acceptable.
+        await deleteNodeModuleDirectories(directory);
+    }
+
+    await git.checkout(buildGitOpts(directory, url));
+
+    logger.info(""); // finish progress line
+    logger.info(`Successfully pulled latest changes from GitHub for ${repo}.`);
+}
+
+/**
+ * Deletes all node_modules directories in the passed nodecg-io installation.
+ * @param nodecgIODir the directory in which nodecg-io is installed
+ */
+async function deleteNodeModuleDirectories(nodecgIODir: string): Promise<void> {
+    logger.debug("Deleting node_modules directories...");
+    const nodeModuleDirs = await new Promise<string[]>((resolve, reject) => {
+        glob(`${nodecgIODir}/**/node_modules`, {}, (err, matches) => {
+            if (err) reject(err);
+            else resolve(matches);
+        });
+    });
+
+    for (const nodeModuleDir of nodeModuleDirs) {
+        if (await directoryExists(nodeModuleDir)) {
+            await removeDirectory(nodeModuleDir);
+        }
+    }
+
+    logger.debug("Deleted node_modules directories.");
 }
 
 async function cloneRepo(directory: string, repo: CloneRepository, url: string): Promise<void> {
@@ -110,11 +168,11 @@ function renderGitProgress(): git.ProgressCallback {
 
 /**
  * Gets the git commit hash of the repo in teh specified directory.
- * @param nodecgIODir the directory of the git repository
+ * @param dir the directory of the git repository
  * @returns the sha of the HEAD commit
  */
-function getGitCommitHash(nodecgIODir: string): Promise<string> {
-    return git.resolveRef({ fs, dir: nodecgIODir, ref: "HEAD" });
+function getGitCommitHash(dir: string): Promise<string> {
+    return git.resolveRef({ fs, dir, ref: "HEAD" });
 }
 
 async function installNPMDependencies(nodecgIODir: string) {

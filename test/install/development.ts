@@ -4,9 +4,17 @@ import * as fsUtils from "../../src/fsUtils";
 import { fsRoot, validDevInstall, nodecgIODir } from "../testUtils";
 import { createDevInstall, getGitRepo } from "../../src/install/development";
 
+const defaultFetchResult: git.FetchResult = {
+    defaultBranch: "master",
+    fetchHead: "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
+    fetchHeadDescription: "",
+};
+
 const cloneSpy = jest.spyOn(git, "clone").mockResolvedValue();
-const ffSpy = jest.spyOn(git, "fastForward").mockResolvedValue();
-const refSpy = jest.spyOn(git, "resolveRef").mockResolvedValue(validDevInstall.commitHash ?? "");
+const fetchSpy = jest.spyOn(git, "fetch").mockResolvedValue(defaultFetchResult);
+const mergeSpy = jest.spyOn(git, "merge").mockResolvedValue({});
+const checkoutSpy = jest.spyOn(git, "checkout").mockResolvedValue();
+const refSpy = jest.spyOn(git, "resolveRef").mockResolvedValue(defaultFetchResult.fetchHead ?? "");
 const execSpy = jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
 
 jest.mock("fs", () => vol);
@@ -14,9 +22,11 @@ afterEach(() => vol.reset());
 
 afterEach(() => {
     cloneSpy.mockClear();
-    ffSpy.mockClear();
+    fetchSpy.mockClear();
+    mergeSpy.mockClear();
+    checkoutSpy.mockClear();
     execSpy.mockClear();
-    refSpy.mockReset();
+    refSpy.mockClear();
 });
 
 describe("createDevInstall", () => {
@@ -48,12 +58,24 @@ describe("getGitRepo", () => {
         expect(cloneSpy).toHaveBeenCalled();
     });
 
-    // Temporarily disabled because pulling is not working properly right now
-    // refer to the comment in pullRepo for further details.
-    test.skip("should pull repo if directory does exist", async () => {
+    test("should fetch repo if directory does exist", async () => {
         await vol.promises.mkdir(nodecgIODir);
         await getGitRepo(nodecgIODir, "nodecg-io");
-        expect(ffSpy).toHaveBeenCalled();
+        expect(fetchSpy).toHaveBeenCalled();
+        expect(mergeSpy).toHaveBeenCalledTimes(0);
+        expect(checkoutSpy).toHaveBeenCalledTimes(0);
+    });
+
+    test("should merge and checkout if new commits were fetched", async () => {
+        fetchSpy.mockResolvedValueOnce({
+            ...defaultFetchResult,
+            fetchHead: "e0c9035898dd52fc65c41454cec9c4d2611bfb37",
+        });
+
+        await vol.promises.mkdir(nodecgIODir);
+        await getGitRepo(nodecgIODir, "nodecg-io");
+        expect(mergeSpy).toHaveBeenCalled();
+        expect(checkoutSpy).toHaveBeenCalled();
     });
 
     test.todo("should use correct git url for nodecg-io and docs");
