@@ -1,0 +1,14 @@
+{
+    "compilerOptions": {
+        "target": "es2019",
+        "sourceMap": true,
+        "lib": ["es2019"],
+        "strict": true,
+        "forceConsistentCasingInFileNames": true,
+        "noFallthroughCasesInSwitch": true,
+        "noImplicitReturns": true,
+        "skipLibCheck": true,
+        "module": "CommonJS",
+        "types": ["node"]
+    }
+}

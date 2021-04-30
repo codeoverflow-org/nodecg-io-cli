@@ -7,6 +7,8 @@ import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../f
 import { readInstallInfo } from "../installation";
 import { corePackages } from "../install/nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
+import * as defaultTsConfigJson from "./tsconfig.json";
+import CodeBlockWriter from "code-block-writer";
 
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
 const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
@@ -65,6 +67,10 @@ async function generateBundle(nodecgDir: string, opts: GenerationOptions): Promi
     }
 
     await generatePackageJson(bundlePath, opts);
+    await generateTsConfig(bundlePath);
+    await generateExtension(bundlePath, opts);
+
+    // TODO: perform npm install and first build
 }
 
 async function generatePackageJson(bundlePath: string, opts: GenerationOptions): Promise<void> {
@@ -100,6 +106,64 @@ async function generatePackageJson(bundlePath: string, opts: GenerationOptions):
     await write(content, bundlePath, "package.json");
 }
 
+async function generateTsConfig(bundlePath: string): Promise<void> {
+    await write(defaultTsConfigJson, bundlePath, "tsconfig.json");
+}
+
+async function generateExtension(bundlePath: string, opts: GenerationOptions): Promise<void> {
+    const services = opts.services.map((svc) => ({
+        name: svc,
+        camelCase: kebabCase2CamelCase(svc),
+        pascalCase: kebabCase2PascalCase(svc),
+    }));
+
+    const writer = new CodeBlockWriter();
+
+    writer.writeLine(`import { NodeCG } from "nodecg/types/server";`);
+    writer.writeLine(`import { requireService } from "nodecg-io-core";`);
+
+    // Service import statements
+    services.forEach((svc) => {
+        // TODO: create lut to lookup service client type names.
+        // We cannot get them this way because they are differently named due to inconsistences and name spelling peculiarities
+        writer.writeLine(`import { ${svc.pascalCase}ServiceClient } from "nodecg-io-${svc.name}";`);
+    });
+
+    // global nodecg function
+    writer.blankLine();
+    writer.write("module.exports = function (nodecg: NodeCG)").block(() => {
+        writer.writeLine(`nodecg.log.info("${opts.bundleName} bundle started.");`);
+        writer.blankLine();
+
+        // requireService calls
+        services.forEach((svc) => {
+            writer.writeLine(
+                `const ${svc.camelCase} = requireService<${svc.pascalCase}ServiceClient>(nodecg, "${svc.name}");`,
+            );
+        });
+
+        // onAvailable and onUnavailable calls
+        services.forEach((svc) => {
+            writer.blankLine();
+
+            writer
+                .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) =>`)
+                .block(() => {
+                    writer.writeLine(`nodecg.log.info("${svc.name} client has been updated.")`);
+                    writer.writeLine(`// You can now use the ${svc.name} client here.`);
+                })
+                .write(");");
+
+            writer.blankLine();
+            writer.writeLine(
+                `${svc.camelCase}?.onUnavailable(() => nodecg.log.info("${svc.name} client has been unset."))`,
+            );
+        });
+    });
+
+    write(writer.toString(), bundlePath, "extension", "index.ts");
+}
+
 async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {
     const finalPath = path.join(...paths);
 
@@ -113,4 +177,15 @@ async function write(content: string | Record<string, unknown>, ...paths: string
 
     const str = typeof content === "string" ? content : JSON.stringify(content, null, 4);
     await fs.promises.writeFile(finalPath, str);
+}
+
+function kebabCase2CamelCase(str: string): string {
+    const parts = str.split("-");
+    const capitalizedParts = parts.map((p, idx) => (idx === 0 ? p : p.charAt(0).toUpperCase() + p.slice(1)));
+    return capitalizedParts.join("");
+}
+
+function kebabCase2PascalCase(str: string): string {
+    const camelCase = kebabCase2CamelCase(str);
+    return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
