@@ -3,6 +3,7 @@ import * as git from "isomorphic-git";
 import * as fsUtils from "../../src/fsUtils";
 import { fsRoot, validDevInstall, nodecgIODir } from "../testUtils";
 import * as dev from "../../src/install/development";
+import { removeDirectory } from "../../src/fsUtils";
 
 const defaultFetchResult: git.FetchResult = {
     defaultBranch: "master",
@@ -14,7 +15,7 @@ const altFetchResult: git.FetchResult = {
     fetchHead: "e0c9035898dd52fc65c41454cec9c4d2611bfb37",
 };
 
-const cloneSpy = jest.spyOn(git, "clone").mockResolvedValue();
+const cloneSpy = jest.spyOn(git, "clone").mockImplementation((opts) => vol.promises.mkdir(opts.dir));
 const fetchSpy = jest.spyOn(git, "fetch").mockResolvedValue(defaultFetchResult);
 const mergeSpy = jest.spyOn(git, "merge").mockResolvedValue({});
 const checkoutSpy = jest.spyOn(git, "checkout").mockResolvedValue();
@@ -45,17 +46,37 @@ describe("createDevInstall", () => {
         expect(execSpy).toHaveBeenCalledTimes(3);
     });
 
-    test.todo("should only clone docs if wanted in installation info");
+    test("should not clone docs if not wanted in installation info", async () => {
+        // cloneDocs is false in validDevInstall, don't need to change it
+        await dev.createDevInstall(validDevInstall, nodecgIODir, 0);
+        expect(cloneSpy).toHaveBeenCalledTimes(1);
+    });
+
+    test("should clone docs if wanted", async () => {
+        await dev.createDevInstall(
+            {
+                ...validDevInstall,
+                cloneDocs: true,
+            },
+            nodecgIODir,
+            0,
+        );
+        expect(cloneSpy).toHaveBeenCalledTimes(2);
+    });
 });
 
 describe("getGitRepo", () => {
+    beforeEach(() => vol.promises.mkdir(nodecgIODir));
+
     test("should clone repo if directory does not exists", async () => {
+        // remove dir so it should clone
+        await removeDirectory(nodecgIODir);
+
         await dev.getGitRepo(nodecgIODir, "nodecg-io");
         expect(cloneSpy).toHaveBeenCalled();
     });
 
     test("should fetch repo if directory does exist", async () => {
-        await vol.promises.mkdir(nodecgIODir);
         await dev.getGitRepo(nodecgIODir, "nodecg-io");
         expect(fetchSpy).toHaveBeenCalled();
         expect(mergeSpy).toHaveBeenCalledTimes(0);
@@ -65,11 +86,15 @@ describe("getGitRepo", () => {
     test("should merge and checkout if new commits were fetched", async () => {
         fetchSpy.mockResolvedValueOnce(altFetchResult);
 
-        await vol.promises.mkdir(nodecgIODir);
         await dev.getGitRepo(nodecgIODir, "nodecg-io");
         expect(mergeSpy).toHaveBeenCalled();
         expect(checkoutSpy).toHaveBeenCalled();
     });
 
-    test.todo("should use correct git url for nodecg-io and docs");
+    test("should use correct git url for nodecg-io and docs", async () => {
+        await dev.getGitRepo(nodecgIODir, "nodecg-io");
+        await dev.getGitRepo(nodecgIODir, "nodecg-io-docs");
+        expect(fetchSpy.mock.calls[0][0].url?.endsWith("nodecg-io.git")).toBe(true);
+        expect(fetchSpy.mock.calls[1][0].url?.endsWith("nodecg-io-docs.git")).toBe(true);
+    });
 });
