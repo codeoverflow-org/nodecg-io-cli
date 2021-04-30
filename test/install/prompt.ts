@@ -25,7 +25,7 @@ describe("getCompatibleVersions", () => {
 });
 
 describe("buildPackageList", () => {
-    const ver = "0.1.0";
+    const ver = "0.1";
     const testSvcName = "testSvc";
     const testSvcPkgName = `nodecg-io-${testSvcName}`;
     const mock = jest.spyOn(npm, "getHighestPatchVersion").mockResolvedValue("0.1.1");

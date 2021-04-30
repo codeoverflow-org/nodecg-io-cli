@@ -192,6 +192,16 @@ export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Pr
 }
 
 /**
+ * Returns you all packages that are in a sub-path of rootPkg.
+ * This is helpful if you have reinstalled rootPkg and now also need to reinstall all packages
+ * that were in the directory of rootPkg because they also got removed in {@link removeNpmPackage}.
+ * @returns the packages that are contained in rootPkg
+ */
+export function getSubPackages(allPackages: NpmPackage[], rootPkg: NpmPackage): NpmPackage[] {
+    return allPackages.filter((pkg) => pkg !== rootPkg && pkg.path.startsWith(rootPkg.path));
+}
+
+/**
  * Gets version of the installed npm by running "npm --version".
  * @returns the npm version or undefined if npm is not installed/not in $PATH.
  */

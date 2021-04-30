@@ -7,6 +7,7 @@ import {
     buildNpmPackagePath,
     downloadNpmPackage,
     createNpmSymlinks,
+    getSubPackages,
 } from "../npm";
 import { directoryExists, ensureDirectory } from "../fsUtils";
 import { logger } from "../log";
@@ -53,13 +54,24 @@ export function diffPackages(
     requested: NpmPackage[],
     current: NpmPackage[],
 ): { pkgInstall: NpmPackage[]; pkgRemove: NpmPackage[] } {
+    // currently installed but not requested exactly anymore
+    const pkgRemove = current.filter((a) => !requested.find((b) => isPackageEquals(a, b)));
+
+    // requested and not already exactly installed (e.g. version change)
+    const pkgInstall = requested.filter((a) => !current.find((b) => isPackageEquals(a, b)));
+
+    // Gets sub-packages of packages in pkgInstall that might not be in there.
+    // E.g. core got upgraded => nodecg-io-core will be removed and reinstalled
+    // nodecg-io-dashboard will also be removed because it is in nodecg-io-core and
+    // contained in the directory of the core package. This ensures that the dashboard will
+    // also be reinstalled, even though it got no upgrade.
+    const installAdditional = pkgInstall.map((pkg) => getSubPackages(requested, pkg)).flat();
+
     return {
-        pkgInstall: requested.filter((a) => !current.find((b) => isPackageEquals(a, b))), // requested and not already exactly installed (e.g. version change)
-        pkgRemove: current.filter((a) => !requested.find((b) => isPackageEquals(a, b))), // currently installed but not requested exactly anymore
+        pkgRemove,
+        pkgInstall: [...new Set(pkgInstall.concat(installAdditional))],
     };
 }
-
-// TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
 
 /**
  * Removes a list of packages from a production nodecg-io install.

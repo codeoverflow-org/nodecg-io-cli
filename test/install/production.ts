@@ -1,6 +1,6 @@
 import { vol } from "memfs";
 import * as path from "path";
-import { corePkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../testUtils";
+import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../testUtils";
 import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
 import * as installation from "../../src/installation";
 import * as fsUtils from "../../src/fsUtils";
@@ -44,6 +44,13 @@ describe("diffPackages", () => {
         const { pkgInstall, pkgRemove } = diffPackages([twitchChatPkg, corePkg], [twitchChatPkg, corePkg]);
         expect(pkgRemove).toStrictEqual([]);
         expect(pkgInstall).toStrictEqual([]);
+    });
+
+    test("should install dashboard (sub pkg) if upgrading core", async () => {
+        // dashboard not modified, but should still be installed because it is in core and core gets upgraded
+        const { pkgInstall, pkgRemove } = diffPackages([corePkg2, dashboardPkg], [corePkg, dashboardPkg]);
+        expect(pkgRemove).toStrictEqual([corePkg]);
+        expect(pkgInstall).toStrictEqual([corePkg2, dashboardPkg]);
     });
 });
 

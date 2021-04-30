@@ -1,5 +1,5 @@
 import * as temp from "temp";
-import { corePackage } from "../src/install/nodecgIOVersions";
+import { corePackage, dashboardPackage, dashboardPath } from "../src/install/nodecgIOVersions";
 import * as path from "path";
 import { DevelopmentInstallation, ProductionInstallation } from "../src/installation";
 
@@ -19,6 +19,11 @@ export const corePkg = {
 export const twitchChatPkg = {
     name: "nodecg-io-twitch-chat",
     path: "nodecg-io-twitch-chat",
+    version: "0.1.0",
+};
+export const dashboardPkg = {
+    name: dashboardPackage,
+    path: dashboardPath,
     version: "0.1.0",
 };
 export const nodecgExampleConfig = {
