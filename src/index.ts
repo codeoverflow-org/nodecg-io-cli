@@ -15,4 +15,5 @@ yargs(process.argv.slice(2))
     .version(version)
     .command(installModule)
     .command(uninstallModule)
+    .strict()
     .demandCommand().argv;
