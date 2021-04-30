@@ -20,7 +20,6 @@ export async function createDevInstall(
     const wasRepoUpdated = await getGitRepo(nodecgIODir, "nodecg-io");
     await manageDocs(nodecgIODir, requested.cloneDocs);
 
-    console.log(wasRepoUpdated);
     if (wasRepoUpdated === false) {
         logger.info("Repository was already up to date. Not building nodecg-io.");
         // useSamples or cloneDocs might have changed and need to be saved, even if not building nodecg-io
