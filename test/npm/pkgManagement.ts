@@ -1,6 +1,6 @@
 import { createFsFromVolume, vol } from "memfs";
-import { createNpmSymlinks, removeNpmPackage, runNpmInstall } from "../../src/npm";
-import { tempDir, corePkg, fsRoot } from "../testUtils";
+import { createNpmSymlinks, getSubPackages, removeNpmPackage, runNpmInstall } from "../../src/npm";
+import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../testUtils";
 import * as fsUtils from "../../src/fsUtils";
 import * as path from "path";
 
@@ -43,5 +43,15 @@ describe("removeNpmPackage", () => {
         const spy = jest.spyOn(fsUtils, "removeDirectory").mockResolvedValue();
         await removeNpmPackage(corePkg, await tempDir());
         expect(spy).toHaveBeenCalled();
+    });
+});
+
+describe("getSubPackages", () => {
+    test("should return empty list if no packages are inside the passed package", async () => {
+        expect(getSubPackages([corePkg, twitchChatPkg], corePkg)).toStrictEqual([]);
+    });
+
+    test("should return dashboard to be inside core", async () => {
+        expect(getSubPackages([corePkg, dashboardPkg], corePkg)).toStrictEqual([dashboardPkg]);
     });
 });
