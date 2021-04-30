@@ -61,12 +61,7 @@ async function install(concurrency: number): Promise<void> {
 
     // Get packages
     if (requestedInstall.dev) {
-        await createDevInstall(
-            requestedInstall,
-            currentInstall && currentInstall.dev ? currentInstall : undefined,
-            nodecgIODir,
-            concurrency,
-        );
+        await createDevInstall(requestedInstall, nodecgIODir, concurrency);
     } else {
         await createProductionInstall(
             requestedInstall,
