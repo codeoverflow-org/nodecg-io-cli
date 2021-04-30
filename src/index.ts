@@ -6,14 +6,17 @@ import { checkForCliUpdate, ensureNode12 } from "./cli";
 
 // This file gets imported by the index.js file of the repository root.
 
-ensureNode12();
-checkForCliUpdate();
-
-yargs(process.argv.slice(2))
+const argv = yargs(process.argv.slice(2))
     .scriptName("nodecg-io")
     .usage("$0 <cmd> [args]")
     .version(version)
     .command(installModule)
     .command(uninstallModule)
+    .option("disable-updates", { type: "boolean", description: "Disables check for nodecg-io-cli updates" })
     .strict()
     .demandCommand().argv;
+
+ensureNode12();
+if (!argv["disable-updates"]) {
+    checkForCliUpdate();
+}
