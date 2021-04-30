@@ -125,7 +125,7 @@ export async function getCompatibleVersions(includeRange: semver.Range = support
  */
 export async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
     const servicePackageNames = services.map((name) => `nodecg-io-${name}`);
-    const packageNames = corePackages.concat(corePackages, servicePackageNames);
+    const packageNames = corePackages.concat(servicePackageNames);
 
     const resolvePromises = packageNames.map(async (pkgName) => ({
         name: pkgName,
