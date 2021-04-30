@@ -29,6 +29,10 @@
     "bugs": {
         "url": "https://github.com/codeoverflow-org/nodecg-io-cli/issues"
     },
+    "files": [
+        "build",
+        "index.js"
+    ],
     "homepage": "https://github.com/codeoverflow-org/nodecg-io-cli#readme",
     "devDependencies": {
         "@types/glob": "^7.1.3",
