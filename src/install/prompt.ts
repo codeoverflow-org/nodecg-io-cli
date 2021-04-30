@@ -124,15 +124,44 @@ export async function getCompatibleVersions(includeRange: semver.Range = support
  * @returns resolved packages with the most up to date patch version.
  */
 export async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
-    // TODO: split this into multiple methods
-    const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
+    const servicePackageNames = services.map((name) => `nodecg-io-${name}`);
+    const packageNames = corePackages.concat(corePackages, servicePackageNames);
+
+    const resolvePromises = packageNames.map(async (pkgName) => ({
         name: pkgName,
-        path: pkgName === dashboardPackage ? dashboardPath : pkgName,
-        version: (await getHighestPatchVersion(pkgName, version)) ?? `${version}.0`,
-        symlink: pkgName === dashboardPackage ? ["monaco-editor"] : undefined,
+        path: getPackagePath(pkgName),
+        version: await getPackageVersion(pkgName, version),
+        symlink: getPackageSymlinks(pkgName),
     }));
 
-    return await Promise.all(promises);
+    return await Promise.all(resolvePromises);
+}
+
+function getPackagePath(pkgName: string) {
+    // Special case: dashboard needs to be in nodecg-io-core/dashboard
+    if (pkgName === dashboardPackage) {
+        return dashboardPath;
+    }
+
+    // Normal case: package should go in directory named after the package
+    // this includes all services.
+    return pkgName;
+}
+
+async function getPackageVersion(pkgName: string, minorVersion: string) {
+    const version = await getHighestPatchVersion(pkgName, minorVersion);
+    // if patch part could be found out we will use .0 as it should always exist if the minor version also does.
+    return version ?? `${version}.0`;
+}
+
+function getPackageSymlinks(pkgName: string) {
+    // special case: dashboard needs monaco-editor to be symlink into the local node_modules directory.
+    if (pkgName === dashboardPackage) {
+        return ["monaco-editor"];
+    }
+
+    // normal case: usually we don't need symlinks because node walks up the fs to find the hoisted node_modules directory.
+    return undefined;
 }
 
 /**
