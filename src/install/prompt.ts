@@ -151,7 +151,7 @@ function getPackagePath(pkgName: string) {
 async function getPackageVersion(pkgName: string, minorVersion: string) {
     const version = await getHighestPatchVersion(pkgName, minorVersion);
     // if patch part could be found out we will use .0 as it should always exist if the minor version also does.
-    return version ?? `${version}.0`;
+    return version ?? `${minorVersion}.0`;
 }
 
 function getPackageSymlinks(pkgName: string) {
