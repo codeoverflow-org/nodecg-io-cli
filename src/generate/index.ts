@@ -93,7 +93,7 @@ async function generatePackageJson(bundlePath: string, opts: GenerationOptions):
 
     const content = {
         name: opts.bundleName,
-        version: opts.version,
+        version: opts.version.version,
         private: true,
         nodecg: {
             compatibleRange: "^1.4.0",
