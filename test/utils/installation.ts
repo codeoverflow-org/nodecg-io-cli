@@ -1,6 +1,6 @@
 import { vol } from "memfs";
-import { readInstallInfo, writeInstallInfo } from "../src/installation";
-import { fsRoot, installJsonPath, validDevInstall } from "./testUtils";
+import { readInstallInfo, writeInstallInfo } from "../../src/utils/installation";
+import { fsRoot, installJsonPath, validDevInstall } from "../testUtils";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());

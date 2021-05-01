@@ -2,9 +2,9 @@ import { vol } from "memfs";
 import * as path from "path";
 import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../testUtils";
 import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
-import * as installation from "../../src/installation";
-import * as fsUtils from "../../src/fsUtils";
-import * as npm from "../../src/npm";
+import * as installation from "../../src/utils/installation";
+import * as fsUtils from "../../src/utils/fs";
+import * as npm from "../../src/utils/npm";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(nodecgIODir));

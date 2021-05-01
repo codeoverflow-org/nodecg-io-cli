@@ -1,4 +1,4 @@
-import { ProductionInstallation, writeInstallInfo } from "../installation";
+import { ProductionInstallation, writeInstallInfo } from "../utils/installation";
 import {
     NpmPackage,
     removeNpmPackage,
@@ -8,9 +8,9 @@ import {
     downloadNpmPackage,
     createNpmSymlinks,
     getSubPackages,
-} from "../npm";
-import { directoryExists, ensureDirectory } from "../fsUtils";
-import { logger } from "../log";
+} from "../utils/npm";
+import { directoryExists, ensureDirectory } from "../utils/fs";
+import { logger } from "../utils/log";
 import { promises as fs } from "fs";
 import path = require("path");
 import chalk = require("chalk");

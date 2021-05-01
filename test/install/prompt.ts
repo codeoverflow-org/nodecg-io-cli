@@ -1,9 +1,9 @@
-import * as npm from "../../src/npm";
+import * as npm from "../../src/utils/npm";
 import * as semver from "semver";
 import { getCompatibleVersions, buildPackageList, getServicesFromInstall } from "../../src/install/prompt";
-import { logger } from "../../src/log";
-import { corePackages, dashboardPackage, dashboardPath } from "../../src/install/nodecgIOVersions";
-import { ProductionInstallation } from "../../src/installation";
+import { logger } from "../../src/utils/log";
+import { corePackages, dashboardPackage, dashboardPath } from "../../src/nodecgIOVersions";
+import { ProductionInstallation } from "../../src/utils/installation";
 import { corePkg, twitchChatPkg } from "../testUtils";
 
 describe("getCompatibleVersions", () => {

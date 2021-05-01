@@ -1,8 +1,8 @@
 import path = require("path");
 import { CommandModule } from "yargs";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../fsUtils";
-import { logger } from "../log";
-import { manageBundleDir } from "../nodecgConfig";
+import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../utils/fs";
+import { logger } from "../utils/log";
+import { manageBundleDir } from "../utils/nodecgConfig";
 
 export const uninstallModule: CommandModule = {
     command: "uninstall",

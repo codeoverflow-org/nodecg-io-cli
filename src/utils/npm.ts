@@ -4,7 +4,7 @@ import * as fs from "fs";
 import * as path from "path";
 import gunzip = require("gunzip-maybe");
 import tar = require("tar-fs");
-import { executeCommand, removeDirectory } from "./fsUtils";
+import { executeCommand, removeDirectory } from "./fs";
 import { exec } from "child_process";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";

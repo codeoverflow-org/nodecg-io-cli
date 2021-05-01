@@ -1,7 +1,7 @@
 import * as temp from "temp";
-import { corePackage, dashboardPackage, dashboardPath } from "../src/install/nodecgIOVersions";
+import { corePackage, dashboardPackage, dashboardPath } from "../src/nodecgIOVersions";
 import * as path from "path";
-import { DevelopmentInstallation, ProductionInstallation } from "../src/installation";
+import { DevelopmentInstallation, ProductionInstallation } from "../src/utils/installation";
 
 /**
  * The root directory of memfs. Differs on unix-like and windows systems.

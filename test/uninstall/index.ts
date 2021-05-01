@@ -1,7 +1,7 @@
 import { vol } from "memfs";
 import { uninstall } from "../../src/uninstall";
-import * as fsUtils from "../../src/fsUtils";
-import * as nodecgConfig from "../../src/nodecgConfig";
+import * as fsUtils from "../../src/utils/fs";
+import * as nodecgConfig from "../../src/utils/nodecgConfig";
 import { fsRoot } from "../testUtils";
 import * as path from "path";
 

@@ -2,9 +2,9 @@ import chalk = require("chalk");
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import * as http from "isomorphic-git/http/node";
-import { directoryExists, executeCommand, removeDirectory } from "../fsUtils";
-import { DevelopmentInstallation, writeInstallInfo } from "../installation";
-import { logger } from "../log";
+import { directoryExists, executeCommand, removeDirectory } from "../utils/fs";
+import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
+import { logger } from "../utils/log";
 import * as path from "path";
 import * as glob from "glob";
 

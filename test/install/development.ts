@@ -1,9 +1,9 @@
 import { vol } from "memfs";
 import * as git from "isomorphic-git";
-import * as fsUtils from "../../src/fsUtils";
+import * as fsUtils from "../../src/utils/fs";
 import { fsRoot, validDevInstall, nodecgIODir } from "../testUtils";
 import * as dev from "../../src/install/development";
-import { removeDirectory } from "../../src/fsUtils";
+import { removeDirectory } from "../../src/utils/fs";
 
 const defaultFetchResult: git.FetchResult = {
     defaultBranch: "master",

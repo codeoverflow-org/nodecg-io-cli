@@ -1,7 +1,7 @@
 import { createFsFromVolume, vol } from "memfs";
-import { createNpmSymlinks, getSubPackages, removeNpmPackage, runNpmInstall } from "../../src/npm";
-import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../testUtils";
-import * as fsUtils from "../../src/fsUtils";
+import { createNpmSymlinks, getSubPackages, removeNpmPackage, runNpmInstall } from "../../../src/utils/npm";
+import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../../testUtils";
+import * as fsUtils from "../../../src/utils/fs";
 import * as path from "path";
 
 jest.mock("fs", () => createFsFromVolume(vol));

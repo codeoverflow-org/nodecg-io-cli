@@ -1,7 +1,7 @@
-import { version as cliVersion, name as cliPkgName } from "../package.json";
+import { version as cliVersion, name as cliPkgName } from "../../package.json";
 import { logger } from "./log";
 import * as chalk from "chalk";
-import { getPackageVersions } from "./npm";
+import { getPackageVersions } from "../utils/npm";
 import * as semver from "semver";
 
 /**

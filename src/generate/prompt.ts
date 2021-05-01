@@ -1,12 +1,12 @@
 import * as semver from "semver";
 import * as inquirer from "inquirer";
 import * as path from "path";
-import { directoryExists } from "../fsUtils";
-import { ProductionInstallation } from "../installation";
+import { directoryExists } from "../utils/fs";
+import { ProductionInstallation } from "../utils/installation";
 import { getServicesFromInstall } from "../install/prompt";
 import { yellowInstallCommand } from ".";
-import { NpmPackage } from "../npm";
-import { corePackage } from "../install/nodecgIOVersions";
+import { NpmPackage } from "../utils/npm";
+import { corePackage } from "../nodecgIOVersions";
 
 export interface GenerationOptions {
     bundleName: string;

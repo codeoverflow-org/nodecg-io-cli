@@ -1,6 +1,6 @@
 import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from "axios";
-import { getHighestPatchVersion, getMinorVersions, getPackageVersions } from "../../src/npm";
-import { corePkg, invalidPkgName, twitchChatPkg } from "../testUtils";
+import { getHighestPatchVersion, getMinorVersions, getPackageVersions } from "../../../src/utils/npm";
+import { corePkg, invalidPkgName, twitchChatPkg } from "../../testUtils";
 
 const versions = ["0.1.0", "0.1.1", "0.1.2", "0.2.0"];
 
