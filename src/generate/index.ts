@@ -4,8 +4,8 @@ import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
 import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
-import { readInstallInfo } from "../utils/installation";
-import { corePackages } from "../nodecgIOVersions";
+import { ProductionInstallation, readInstallInfo } from "../utils/installation";
+import { corePackages, getServiceClientName } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import * as defaultTsConfigJson from "./tsconfig.json";
 import CodeBlockWriter from "code-block-writer";
@@ -39,7 +39,7 @@ export const generateModule: CommandModule = {
         const opts = await promptGenerationOpts(nodecgDir, install);
 
         try {
-            await generateBundle(nodecgDir, opts);
+            await generateBundle(nodecgDir, opts, install);
         } catch (e) {
             logger.error(`Couldn't generate bundle: ${e}`);
             process.exit(1);
@@ -49,7 +49,11 @@ export const generateModule: CommandModule = {
     },
 };
 
-async function generateBundle(nodecgDir: string, opts: GenerationOptions): Promise<void> {
+async function generateBundle(
+    nodecgDir: string,
+    opts: GenerationOptions,
+    install: ProductionInstallation,
+): Promise<void> {
     // Create dir if necessary
     const bundlePath = path.join(opts.bundleDir, opts.bundleName);
     if (!(await directoryExists(bundlePath))) {
@@ -68,7 +72,7 @@ async function generateBundle(nodecgDir: string, opts: GenerationOptions): Promi
 
     await generatePackageJson(bundlePath, opts);
     await generateTsConfig(bundlePath);
-    await generateExtension(bundlePath, opts);
+    await generateExtension(bundlePath, opts, install);
 
     // TODO: perform npm install and first build
 }
@@ -110,11 +114,16 @@ async function generateTsConfig(bundlePath: string): Promise<void> {
     await write(defaultTsConfigJson, bundlePath, "tsconfig.json");
 }
 
-async function generateExtension(bundlePath: string, opts: GenerationOptions): Promise<void> {
+async function generateExtension(
+    bundlePath: string,
+    opts: GenerationOptions,
+    install: ProductionInstallation,
+): Promise<void> {
     const services = opts.services.map((svc) => ({
         name: svc,
         camelCase: kebabCase2CamelCase(svc),
         pascalCase: kebabCase2PascalCase(svc),
+        clientName: getServiceClientName(svc, install.version),
     }));
 
     const writer = new CodeBlockWriter();
@@ -124,9 +133,7 @@ async function generateExtension(bundlePath: string, opts: GenerationOptions): P
 
     // Service import statements
     services.forEach((svc) => {
-        // TODO: create lut to lookup service client type names.
-        // We cannot get them this way because they are differently named due to inconsistences and name spelling peculiarities
-        writer.writeLine(`import { ${svc.pascalCase}ServiceClient } from "nodecg-io-${svc.name}";`);
+        writer.writeLine(`import { ${svc.clientName} } from "nodecg-io-${svc.name}";`);
     });
 
     // global nodecg function
@@ -137,9 +144,7 @@ async function generateExtension(bundlePath: string, opts: GenerationOptions): P
 
         // requireService calls
         services.forEach((svc) => {
-            writer.writeLine(
-                `const ${svc.camelCase} = requireService<${svc.pascalCase}ServiceClient>(nodecg, "${svc.name}");`,
-            );
+            writer.writeLine(`const ${svc.camelCase} = requireService<${svc.clientName}>(nodecg, "${svc.name}");`);
         });
 
         // onAvailable and onUnavailable calls
@@ -148,7 +153,7 @@ async function generateExtension(bundlePath: string, opts: GenerationOptions): P
 
             writer
                 .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) =>`)
-                .block(() => {
+                .inlineBlock(() => {
                     writer.writeLine(`nodecg.log.info("${svc.name} client has been updated.")`);
                     writer.writeLine(`// You can now use the ${svc.name} client here.`);
                 })
