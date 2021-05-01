@@ -3,12 +3,13 @@ import * as chalk from "chalk";
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
+import { directoryExists, executeCommand, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages, getServiceClientName } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import * as defaultTsConfigJson from "./tsconfig.json";
 import CodeBlockWriter from "code-block-writer";
+import { runNpmBuild, runNpmInstall } from "../utils/npm";
 
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
 const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
@@ -73,8 +74,13 @@ async function generateBundle(
     await generatePackageJson(bundlePath, opts);
     await generateTsConfig(bundlePath);
     await generateExtension(bundlePath, opts, install);
+    logger.info("Generated bundle successfully.");
 
-    // TODO: perform npm install and first build
+    logger.info("Installing dependencies...");
+    await runNpmInstall(bundlePath, false);
+
+    logger.info("Compiling bundle...");
+    await runNpmBuild(bundlePath);
 }
 
 async function generatePackageJson(bundlePath: string, opts: GenerationOptions): Promise<void> {
@@ -152,7 +158,7 @@ async function generateExtension(
             writer.blankLine();
 
             writer
-                .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) =>`)
+                .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) => `)
                 .inlineBlock(() => {
                     writer.writeLine(`nodecg.log.info("${svc.name} client has been updated.")`);
                     writer.writeLine(`// You can now use the ${svc.name} client here.`);

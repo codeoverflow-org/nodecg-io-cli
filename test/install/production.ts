@@ -98,10 +98,10 @@ describe("installPackages", () => {
         expect(packageJson["workspaces"]).toStrictEqual(packages.map((p) => p.path));
     });
 
-    test("should install dependencies", async () => {
+    test("should install prod dependencies", async () => {
         await installPackages(packages, createInstall(), nodecgIODir);
         expect(npmInstallMock).toHaveBeenCalled();
-        expect(npmInstallMock).toHaveBeenCalledWith(nodecgIODir);
+        expect(npmInstallMock).toHaveBeenCalledWith(nodecgIODir, true);
     });
 
     test("should revert changes if npm install fails", async () => {

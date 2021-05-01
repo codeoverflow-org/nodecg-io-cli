@@ -149,7 +149,7 @@ async function createSymlinks(pkgs: NpmPackage[], nodecgIODir: string): Promise<
  */
 async function installNpmDependencies(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
     await writeWorkspacePackageJson(pkgs, nodecgIODir);
-    await runNpmInstall(nodecgIODir);
+    await runNpmInstall(nodecgIODir, true);
 }
 
 /**

@@ -7,6 +7,7 @@ import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation
 import { logger } from "../utils/log";
 import * as path from "path";
 import * as glob from "glob";
+import { runNpmBuild, runNpmInstall } from "../utils/npm";
 
 type CloneRepository = "nodecg-io" | "nodecg-io-docs";
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
@@ -176,7 +177,7 @@ function getGitCommitHash(dir: string): Promise<string> {
 async function installNPMDependencies(nodecgIODir: string) {
     logger.info("Installing npm dependencies and bootstrapping...");
 
-    await executeCommand("npm", ["install"], nodecgIODir);
+    await runNpmInstall(nodecgIODir, false);
     await executeCommand("npm", ["run", "bootstrap"], nodecgIODir);
 
     logger.info("Installed npm dependencies and bootstrapped.");
@@ -184,6 +185,6 @@ async function installNPMDependencies(nodecgIODir: string) {
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
     logger.info("Compiling nodecg-io...");
-    await executeCommand("npm", ["run", "build", "--", "--concurrency", concurrency.toString()], nodecgIODir);
+    await runNpmBuild(nodecgIODir, "--", "concurrency", concurrency.toString());
     logger.success("Compiled nodecg-io.");
 }

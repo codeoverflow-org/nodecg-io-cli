@@ -150,9 +150,20 @@ export async function downloadNpmPackage(pkg: NpmPackage, nodecgIODir: string): 
 /**
  * Installs npm production dependencies in the passed path by running npm install --prod in the directory.
  * @param path the path where a package.json is present
+ * @param prod whether to only install production dependencies or also devDependencies.
  */
-export async function runNpmInstall(path: string): Promise<void> {
-    await executeCommand("npm", ["install", "--prod"], path);
+export async function runNpmInstall(path: string, prod: boolean): Promise<void> {
+    const prodArg = prod ? ["--prod"] : [];
+    await executeCommand("npm", ["install", ...prodArg], path);
+}
+
+/**
+ * Compiles the TypeScript code of a package by running executing the npm script called "build".
+ * @param path the path in which the package is located.
+ * @param args additional arguments that are passed to npm.
+ */
+export async function runNpmBuild(path: string, ...args: string[]): Promise<void> {
+    await executeCommand("npm", ["run", "build", ...args], path);
 }
 
 /**
