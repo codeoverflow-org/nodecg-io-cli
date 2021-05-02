@@ -108,11 +108,13 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     if (!opts.corePackage) throw new Error("corePackage undefined");
 
     const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]));
-    const nodecgVersion = await getNodeCGVersion(nodecgDir);
 
     logger.debug("Fetching latest typescript and @types/node versions...");
-    const latestNodeTypes = await getLatestPackageVersion("@types/node");
-    const latestTypeScript = await getLatestPackageVersion("typescript");
+    const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
+        getNodeCGVersion(nodecgDir),
+        getLatestPackageVersion("@types/node"),
+        getLatestPackageVersion("typescript"),
+    ]);
 
     const dependencies = {
         "@types/node": addSemverCaret(latestNodeTypes),

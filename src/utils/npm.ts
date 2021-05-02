@@ -1,4 +1,4 @@
-import axios from "axios";
+import axios, { AxiosRequestConfig } from "axios";
 import * as fs from "fs";
 import * as path from "path";
 import { executeCommand, removeDirectory } from "./fs";
@@ -38,15 +38,21 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
 
 // TODO: rework this module to always return SemVers if it is a full version.
 
+// Only gets abbreviated metadata as described in https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
+const axiosNpmMetadataConfig: AxiosRequestConfig = {
+    headers: {
+        // Includes fallback to full json, just in case the npm registry malfunctions or this is removed for some reason
+        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*",
+    },
+};
+
 /**
  * Gets all version for the passed package that are available at the official npm registry.
  * @param packageName which package you want the versions to.
  * @returns the versions of the package
  */
 export async function getPackageVersions(packageName: string): Promise<string[]> {
-    // TODO: get only abbreviated metadata for 50-75% smaller requests:
-    // https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
-    const response = await axios(npmRegistryEndpoint + packageName);
+    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
     if (response.data.versions) {
         return Object.keys(response.data.versions);
     } else {
@@ -62,7 +68,7 @@ export async function getPackageVersions(packageName: string): Promise<string[]>
  * @return the latest version if the package was found and null if the package was not found on the npm registry.
  */
 export async function getLatestPackageVersion(packageName: string): Promise<string> {
-    const response = await axios(npmRegistryEndpoint + packageName);
+    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
     // Gets version through npm tag "latest" so we don't use any pre-release or beta versions
     const latest = response.data["dist-tags"]["latest"];
     if (!latest) {
