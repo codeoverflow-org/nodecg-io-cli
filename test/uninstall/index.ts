@@ -1,6 +1,7 @@
 import { vol } from "memfs";
 import { uninstall } from "../../src/uninstall";
 import * as fsUtils from "../../src/utils/fs";
+import * as nodecgInstall from "../../src/utils/nodecgInstallation";
 import * as nodecgConfig from "../../src/utils/nodecgConfig";
 import { fsRoot } from "../testUtils";
 import * as path from "path";
@@ -10,7 +11,7 @@ afterEach(() => vol.reset());
 
 const nodecgIODir = path.join(fsRoot, "nodecg-io");
 
-jest.spyOn(fsUtils, "findNodeCGDirectory").mockResolvedValue(fsRoot);
+jest.spyOn(nodecgInstall, "findNodeCGDirectory").mockResolvedValue(fsRoot);
 const spyManageBundleDir = jest.spyOn(nodecgConfig, "manageBundleDir");
 const spyRemoveDirectory = jest.spyOn(fsUtils, "removeDirectory");
 

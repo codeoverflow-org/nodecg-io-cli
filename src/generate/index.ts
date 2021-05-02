@@ -3,13 +3,31 @@ import * as chalk from "chalk";
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
+import { directoryExists } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import * as defaultTsConfigJson from "./tsconfig.json";
 import { runNpmBuild, runNpmInstall } from "../utils/npm";
 import { generateExtension } from "./codegen";
+import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
+
+const defaultTsConfigJson = {
+    compilerOptions: {
+        target: "es2019",
+        sourceMap: true,
+        lib: ["es2019"],
+        alwaysStrict: true,
+        forceConsistentCasingInFileNames: true,
+        noFallthroughCasesInSwitch: true,
+        noImplicitAny: true,
+        noImplicitReturns: true,
+        noImplicitThis: true,
+        strictNullChecks: true,
+        skipLibCheck: true,
+        module: "CommonJS",
+        types: ["node"],
+    },
+};
 
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
 const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
@@ -40,7 +58,7 @@ export const generateModule: CommandModule = {
         const opts = await promptGenerationOpts(nodecgDir, install);
 
         try {
-            await generateBundle(opts, install);
+            await generateBundle(nodecgDir, opts, install);
         } catch (e) {
             logger.error(`Couldn't generate bundle: ${e}`);
             process.exit(1);
@@ -50,7 +68,11 @@ export const generateModule: CommandModule = {
     },
 };
 
-async function generateBundle(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
+async function generateBundle(
+    nodecgDir: string,
+    opts: GenerationOptions,
+    install: ProductionInstallation,
+): Promise<void> {
     // Create dir if necessary
     const bundlePath = path.join(opts.bundleDir, opts.bundleName);
     if (!(await directoryExists(bundlePath))) {
@@ -67,7 +89,7 @@ async function generateBundle(opts: GenerationOptions, install: ProductionInstal
         process.exit(1);
     }
 
-    await generatePackageJson(bundlePath, opts);
+    await generatePackageJson(nodecgDir, bundlePath, opts);
     await generateTsConfig(bundlePath);
     await generateExtension(bundlePath, opts, install);
     logger.info("Generated bundle successfully.");
@@ -79,15 +101,17 @@ async function generateBundle(opts: GenerationOptions, install: ProductionInstal
     await runNpmBuild(bundlePath);
 }
 
-async function generatePackageJson(bundlePath: string, opts: GenerationOptions): Promise<void> {
+async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: GenerationOptions): Promise<void> {
     // This shouldn't happen...
     if (!opts.servicePackages) throw new Error("servicePackages undefined");
     if (!opts.corePackage) throw new Error("corePackage undefined");
 
     const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, "^" + pkg.version]));
+    const nodecgVersion = await getNodeCGVersion(nodecgDir);
+
     const dependencies = {
         "@types/node": "^15.0.1", // TODO: maybe fetch newest version automatically
-        nodecg: "^1.8.1", // TODO: get actual nodecg version,
+        nodecg: "^" + nodecgVersion, // TODO: create extra function to add semver caret operator to a version
         typescript: "^4.2.4",
         "nodecg-io-core": "^" + opts.corePackage.version,
         ...serviceDeps,

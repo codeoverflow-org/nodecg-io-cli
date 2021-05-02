@@ -1,6 +1,6 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../utils/fs";
+import { directoryExists, removeDirectory } from "../utils/fs";
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../utils/nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
@@ -9,6 +9,7 @@ import { createProductionInstall } from "./production";
 import * as os from "os";
 import { logger } from "../utils/log";
 import { requireNpmV7 } from "../utils/npm";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",

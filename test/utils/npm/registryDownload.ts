@@ -5,7 +5,7 @@ import * as path from "path";
 
 describe("createNpmPackageReadStream", () => {
     test("should successfully create read stream for valid package", async () => {
-        expect(createNpmPackageReadStream(corePkg)).resolves.toBeDefined();
+        await expect(createNpmPackageReadStream(corePkg)).resolves.toBeDefined();
     });
 
     test("should error if package name is invalid", async () => {
