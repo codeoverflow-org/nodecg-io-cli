@@ -1,73 +1,15 @@
 import CodeBlockWriter from "code-block-writer";
 import { getServiceClientName } from "../nodecgIOVersions";
 import { ProductionInstallation } from "../utils/installation";
-import { GenerationOptions } from "./prompt";
+import { CodeLanguage, GenerationOptions } from "./prompt";
 import { write } from "./index";
 
-export async function generateExtension(
-    bundlePath: string,
-    opts: GenerationOptions,
-    install: ProductionInstallation,
-): Promise<void> {
-    // Shouldn't happen...
-    if (!opts.corePackage) throw new Error("corePackage is undefined");
-
-    // Generate further information for each service which is needed to generate the bundle extension.
-    const services = opts.services.map((svc) => ({
-        name: svc,
-        camelCase: kebabCase2CamelCase(svc),
-        pascalCase: kebabCase2PascalCase(svc),
-        clientName: getServiceClientName(svc, install.version),
-        packageName: `nodecg-io-${svc}`,
-    }));
-
-    const writer = new CodeBlockWriter();
-
-    genImport(writer, "NodeCG", "nodecg/types/server");
-    genImport(writer, "requireService", opts.corePackage.name);
-
-    // Service import statements
-    services.forEach((svc) => {
-        genImport(writer, svc.clientName, svc.packageName);
-    });
-
-    // global nodecg function
-    writer.blankLine();
-    writer.write("module.exports = function (nodecg: NodeCG) ").block(() => {
-        genLog(writer, `${opts.bundleName} bundle started.`);
-        writer.blankLine();
-
-        // requireService calls
-        services.forEach((svc) => {
-            writer
-                .write(`const ${svc.camelCase} = requireService<${svc.clientName}>(nodecg, `)
-                .quote(svc.name)
-                .writeLine(");");
-        });
-
-        // onAvailable and onUnavailable calls
-        services.forEach((svc) => {
-            writer.blankLine();
-
-            writer
-                .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) => `)
-                .inlineBlock(() => {
-                    genLog(writer, `${svc.name} service has been updated.`);
-                    writer.writeLine(`// You can now use the ${svc.name} client here.`);
-                })
-                .write(");");
-
-            writer.blankLine();
-            writer
-                .write(`${svc.camelCase}?.onUnavailable(() => `)
-                .inlineBlock(() => {
-                    genLog(writer, `${svc.name} has been unset.`);
-                })
-                .write(");");
-        });
-    });
-
-    write(writer.toString(), bundlePath, "extension", "index.ts");
+interface ServiceNames {
+    name: string;
+    camelCase: string;
+    pascalCase: string;
+    clientName: string;
+    packageName: string;
 }
 
 function kebabCase2CamelCase(str: string): string {
@@ -81,10 +23,105 @@ function kebabCase2PascalCase(str: string): string {
     return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }
 
-function genImport(writer: CodeBlockWriter, symbolToImport: string, packageName: string) {
-    writer.write(`import { ${symbolToImport} } from `).quote(packageName).write(";");
+function getServiceNames(serviceBaseName: string, nodecgIOVersion: string): ServiceNames {
+    return {
+        name: serviceBaseName,
+        camelCase: kebabCase2CamelCase(serviceBaseName),
+        pascalCase: kebabCase2PascalCase(serviceBaseName),
+        clientName: getServiceClientName(serviceBaseName, nodecgIOVersion),
+        packageName: `nodecg-io-${serviceBaseName}`,
+    };
+}
+
+export async function generateExtension(
+    bundlePath: string,
+    opts: GenerationOptions,
+    install: ProductionInstallation,
+): Promise<void> {
+    // Shouldn't happen...
+    if (!opts.corePackage) throw new Error("corePackage is undefined");
+
+    // Generate further information for each service which is needed to generate the bundle extension.
+    const services = opts.services.map((svc) => getServiceNames(svc, install.version));
+
+    const writer = new CodeBlockWriter();
+
+    genImport(writer, "requireService", opts.corePackage.name, opts.language);
+
+    if (opts.language === "typescript") {
+        genImport(writer, "NodeCG", "nodecg/types/server", opts.language);
+        // Service import statements
+        services.forEach((svc) => {
+            genImport(writer, svc.clientName, svc.packageName, opts.language);
+        });
+    }
+
+    // global nodecg function
+    writer.blankLine();
+    const nodecgVariableType = opts.language === "typescript" ? ": NodeCG" : "";
+    writer.write(`module.exports = function (nodecg${nodecgVariableType}) `).block(() => {
+        genLog(writer, `${opts.bundleName} bundle started.`);
+        writer.blankLine();
+
+        // requireService calls
+        services.forEach((svc) => genRequireServiceCall(writer, svc, opts.language));
+
+        // onAvailable and onUnavailable calls
+        services.forEach((svc) => {
+            writer.blankLine();
+            genOnAvailableCall(writer, svc);
+
+            writer.blankLine();
+            genOnUnavailableCall(writer, svc);
+        });
+    });
+
+    const fileExtension = opts.language === "typescript" ? "ts" : "js";
+    await write(writer.toString(), bundlePath, "extension", `index.${fileExtension}`);
+}
+
+function genImport(writer: CodeBlockWriter, symbolToImport: string, packageName: string, lang: CodeLanguage) {
+    if (lang === "typescript") {
+        writer.write(`import { ${symbolToImport} } from `).quote(packageName).write(";");
+    } else if (lang === "javascript") {
+        writer.write(`const ${symbolToImport} = require(`).quote(packageName).write(`).${symbolToImport};`);
+    } else {
+        throw new Error("unsupported language: " + lang);
+    }
+
+    writer.write("\n");
 }
 
 function genLog(writer: CodeBlockWriter, logMessage: string) {
     writer.write("nodecg.log.info(").quote(logMessage).write(");");
+}
+
+function genRequireServiceCall(writer: CodeBlockWriter, svc: ServiceNames, lang: CodeLanguage) {
+    writer.write(`const ${svc.camelCase} = requireService`);
+
+    if (lang === "typescript") {
+        // Add type parameter which is only needed in TypeScript
+        writer.write(`<${svc.clientName}>`);
+    }
+
+    writer.write(`(nodecg, `).quote(svc.name).write(");");
+}
+
+function genOnAvailableCall(writer: CodeBlockWriter, svc: ServiceNames) {
+    writer
+        .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) => `)
+        .inlineBlock(() => {
+            genLog(writer, `${svc.name} service has been updated.`);
+            writer.writeLine(`// You can now use the ${svc.name} client here.`);
+        })
+        .write(");");
+}
+
+function genOnUnavailableCall(writer: CodeBlockWriter, svc: ServiceNames) {
+    writer
+        .write(`${svc.camelCase}?.onUnavailable(() => `)
+        .inlineBlock(() => {
+            genLog(writer, `${svc.name} has been unset.`);
+        })
+        .write(");");
 }

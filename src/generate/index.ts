@@ -91,15 +91,22 @@ async function generateBundle(
     }
 
     await generatePackageJson(nodecgDir, bundlePath, opts);
-    await generateTsConfig(bundlePath);
+    // TS needs its tsconfig.json compiler configuration
+    if (opts.language === "typescript") {
+        await generateTsConfig(bundlePath);
+    }
+
     await generateExtension(bundlePath, opts, install);
     logger.info("Generated bundle successfully.");
 
     logger.info("Installing dependencies...");
     await runNpmInstall(bundlePath, false);
 
-    logger.info("Compiling bundle...");
-    await runNpmBuild(bundlePath);
+    // JavaScript does not to be compiled
+    if (opts.language === "typescript") {
+        logger.info("Compiling bundle...");
+        await runNpmBuild(bundlePath);
+    }
 }
 
 async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: GenerationOptions): Promise<void> {
@@ -107,22 +114,29 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     if (!opts.servicePackages) throw new Error("servicePackages undefined");
     if (!opts.corePackage) throw new Error("corePackage undefined");
 
-    const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]));
+    const serviceDeps: [string, string][] = opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]);
 
-    logger.debug("Fetching latest typescript and @types/node versions...");
-    const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
-        getNodeCGVersion(nodecgDir),
-        getLatestPackageVersion("@types/node"),
-        getLatestPackageVersion("typescript"),
-    ]);
+    const dependencies: [string, string][] = [["nodecg-io-core", addSemverCaret(opts.corePackage.version)]];
 
-    const dependencies = {
-        "@types/node": addSemverCaret(latestNodeTypes),
-        nodecg: addSemverCaret(nodecgVersion),
-        typescript: addSemverCaret(latestTypeScript),
-        "nodecg-io-core": addSemverCaret(opts.corePackage.version),
-        ...serviceDeps,
-    };
+    // When we use JS we only need core for requireService etc. and if we TS we also need nodecg, ts, types for node and
+    // each service for typings.
+    if (opts.language === "typescript") {
+        dependencies.push(...serviceDeps);
+
+        logger.debug("Fetching latest typescript and @types/node versions...");
+        const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
+            getNodeCGVersion(nodecgDir),
+            getLatestPackageVersion("@types/node"),
+            getLatestPackageVersion("typescript"),
+        ]);
+
+        dependencies.push(
+            ["nodecg", addSemverCaret(nodecgVersion)],
+            ["@types/node", addSemverCaret(latestNodeTypes)],
+            ["typescript", addSemverCaret(latestTypeScript)],
+        );
+        dependencies.sort();
+    }
 
     const content = {
         name: opts.bundleName,
@@ -130,14 +144,18 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
         private: true,
         nodecg: {
             compatibleRange: addSemverCaret("1.4.0"),
-            bundleDependencies: serviceDeps,
+            bundleDependencies: Object.fromEntries(serviceDeps),
         },
-        scripts: {
-            build: "tsc -b",
-            watch: "tsc -b -w",
-            clean: "tsc -b --clean",
-        },
-        dependencies,
+        // These scripts are for compiling TS and thus are only needed when generating a TS bundle
+        scripts:
+            opts.language === "typescript"
+                ? {
+                      build: "tsc -b",
+                      watch: "tsc -b -w",
+                      clean: "tsc -b --clean",
+                  }
+                : undefined,
+        dependencies: Object.fromEntries(dependencies),
     };
 
     await write(content, bundlePath, "package.json");
