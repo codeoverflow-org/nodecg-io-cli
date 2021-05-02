@@ -3,13 +3,13 @@ import * as chalk from "chalk";
 import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
-import { directoryExists, executeCommand, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
+import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
-import { corePackages, getServiceClientName } from "../nodecgIOVersions";
+import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import * as defaultTsConfigJson from "./tsconfig.json";
-import CodeBlockWriter from "code-block-writer";
 import { runNpmBuild, runNpmInstall } from "../utils/npm";
+import { generateExtension } from "./codegen";
 
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
 const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
@@ -40,7 +40,7 @@ export const generateModule: CommandModule = {
         const opts = await promptGenerationOpts(nodecgDir, install);
 
         try {
-            await generateBundle(nodecgDir, opts, install);
+            await generateBundle(opts, install);
         } catch (e) {
             logger.error(`Couldn't generate bundle: ${e}`);
             process.exit(1);
@@ -50,11 +50,7 @@ export const generateModule: CommandModule = {
     },
 };
 
-async function generateBundle(
-    nodecgDir: string,
-    opts: GenerationOptions,
-    install: ProductionInstallation,
-): Promise<void> {
+async function generateBundle(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
     // Create dir if necessary
     const bundlePath = path.join(opts.bundleDir, opts.bundleName);
     if (!(await directoryExists(bundlePath))) {
@@ -117,65 +113,12 @@ async function generatePackageJson(bundlePath: string, opts: GenerationOptions):
 }
 
 async function generateTsConfig(bundlePath: string): Promise<void> {
+    // TODO: do we want to support ts in dashboard/graphic out of the box?
+    // If not we shouldn't try to compile them.
     await write(defaultTsConfigJson, bundlePath, "tsconfig.json");
 }
 
-async function generateExtension(
-    bundlePath: string,
-    opts: GenerationOptions,
-    install: ProductionInstallation,
-): Promise<void> {
-    const services = opts.services.map((svc) => ({
-        name: svc,
-        camelCase: kebabCase2CamelCase(svc),
-        pascalCase: kebabCase2PascalCase(svc),
-        clientName: getServiceClientName(svc, install.version),
-    }));
-
-    const writer = new CodeBlockWriter();
-
-    writer.writeLine(`import { NodeCG } from "nodecg/types/server";`);
-    writer.writeLine(`import { requireService } from "nodecg-io-core";`);
-
-    // Service import statements
-    services.forEach((svc) => {
-        writer.writeLine(`import { ${svc.clientName} } from "nodecg-io-${svc.name}";`);
-    });
-
-    // global nodecg function
-    writer.blankLine();
-    writer.write("module.exports = function (nodecg: NodeCG)").block(() => {
-        writer.writeLine(`nodecg.log.info("${opts.bundleName} bundle started.");`);
-        writer.blankLine();
-
-        // requireService calls
-        services.forEach((svc) => {
-            writer.writeLine(`const ${svc.camelCase} = requireService<${svc.clientName}>(nodecg, "${svc.name}");`);
-        });
-
-        // onAvailable and onUnavailable calls
-        services.forEach((svc) => {
-            writer.blankLine();
-
-            writer
-                .write(`${svc.camelCase}?.onAvailable(async (${svc.camelCase}Client) => `)
-                .inlineBlock(() => {
-                    writer.writeLine(`nodecg.log.info("${svc.name} client has been updated.")`);
-                    writer.writeLine(`// You can now use the ${svc.name} client here.`);
-                })
-                .write(");");
-
-            writer.blankLine();
-            writer.writeLine(
-                `${svc.camelCase}?.onUnavailable(() => nodecg.log.info("${svc.name} client has been unset."))`,
-            );
-        });
-    });
-
-    write(writer.toString(), bundlePath, "extension", "index.ts");
-}
-
-async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {
+export async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {
     const finalPath = path.join(...paths);
 
     logger.debug(`Writing file at ${finalPath}`);
@@ -188,15 +131,4 @@ async function write(content: string | Record<string, unknown>, ...paths: string
 
     const str = typeof content === "string" ? content : JSON.stringify(content, null, 4);
     await fs.promises.writeFile(finalPath, str);
-}
-
-function kebabCase2CamelCase(str: string): string {
-    const parts = str.split("-");
-    const capitalizedParts = parts.map((p, idx) => (idx === 0 ? p : p.charAt(0).toUpperCase() + p.slice(1)));
-    return capitalizedParts.join("");
-}
-
-function kebabCase2PascalCase(str: string): string {
-    const camelCase = kebabCase2CamelCase(str);
-    return camelCase.charAt(0).toUpperCase() + camelCase.slice(1);
 }

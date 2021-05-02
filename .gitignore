@@ -7,3 +7,7 @@ nodecg/
 
 # Test coverage output
 coverage/
+
+# IDEs / Text editors
+.idea/
+.vscode/

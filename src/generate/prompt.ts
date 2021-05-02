@@ -63,7 +63,7 @@ export async function promptGenerationOpts(
         {
             type: "checkbox",
             name: "services",
-            message: `Which services would you like to use? (they must be installed through ${yellowInstallCommand})`,
+            message: `Which services would you like to use? (they must be installed through ${yellowInstallCommand} first)`,
             choices: getServicesFromInstall(install, install.version),
             validate: validateServiceSelection,
         },
