@@ -10,6 +10,14 @@ import tar = require("tar-fs");
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
 const nodeModulesDir = "node_modules";
 
+// Only gets abbreviated metadata as described in https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
+const axiosNpmMetadataConfig: AxiosRequestConfig = {
+    headers: {
+        // Includes fallback to full json, just in case the npm registry malfunctions or this is removed for some reason
+        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*",
+    },
+};
+
 /**
  * Information about a npm package that will be fetched by a prod install with name, installed version
  * and the path where the package should be installed.
@@ -36,25 +44,15 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
     return a.name === b.name && a.path === b.path && a.version === b.version && symlinkEq;
 }
 
-// TODO: rework this module to always return SemVers if it is a full version.
-
-// Only gets abbreviated metadata as described in https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
-const axiosNpmMetadataConfig: AxiosRequestConfig = {
-    headers: {
-        // Includes fallback to full json, just in case the npm registry malfunctions or this is removed for some reason
-        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*",
-    },
-};
-
 /**
  * Gets all version for the passed package that are available at the official npm registry.
  * @param packageName which package you want the versions to.
  * @returns the versions of the package
  */
-export async function getPackageVersions(packageName: string): Promise<string[]> {
+export async function getPackageVersions(packageName: string): Promise<SemVer[]> {
     const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
     if (response.data.versions) {
-        return Object.keys(response.data.versions);
+        return Object.keys(response.data.versions).map((versionString) => new SemVer(versionString));
     } else {
         // Version field is missing when e.g. the package has been fully unpublished
         // see https://www.npmjs.com/policies/unpublish for further details.
@@ -67,14 +65,16 @@ export async function getPackageVersions(packageName: string): Promise<string[]>
  * @param packageName the package for which you want to get the latest published version.
  * @return the latest version if the package was found and null if the package was not found on the npm registry.
  */
-export async function getLatestPackageVersion(packageName: string): Promise<string> {
+export async function getLatestPackageVersion(packageName: string): Promise<SemVer> {
     const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
+
     // Gets version through npm tag "latest" so we don't use any pre-release or beta versions
     const latest = response.data["dist-tags"]["latest"];
     if (!latest) {
         throw new Error(`Metadata response for ${packageName} does not contain a latest dist-tag.`);
     }
-    return latest;
+
+    return new SemVer(latest);
 }
 
 /**
@@ -85,10 +85,7 @@ export async function getLatestPackageVersion(packageName: string): Promise<stri
  */
 export async function getMinorVersions(packageName: string): Promise<string[]> {
     const allVersions = await getPackageVersions(packageName);
-    const majorMinorVersions = allVersions.map((version) => {
-        const { major, minor } = new SemVer(version);
-        return `${major}.${minor}`;
-    });
+    const majorMinorVersions = allVersions.map((version) => `${version.major}.${version.minor}`);
     return [...new Set(majorMinorVersions)];
 }
 
@@ -99,7 +96,7 @@ export async function getMinorVersions(packageName: string): Promise<string[]> {
  * @param packageName the package you want the highest patch version to
  * @param majorMinor the major.minor version that you want to get the highest patch version of
  */
-export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<string | null> {
+export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<SemVer | null> {
     const allVersions = await getPackageVersions(packageName);
     return maxSatisfying(allVersions, "~" + majorMinor);
 }
@@ -262,7 +259,7 @@ export function getNpmVersion(): Promise<SemVer | undefined> {
 
 /**
  * Ensures that there is a npm installation in the current $PATH and it is npm version 7 or higher
- * because thats required for nodecg-io prod (workspaces) and dev (lockfile v2).
+ * because that's required for nodecg-io prod (workspaces) and dev (lockfile v2).
  */
 export async function requireNpmV7(): Promise<void> {
     const version = await getNpmVersion();

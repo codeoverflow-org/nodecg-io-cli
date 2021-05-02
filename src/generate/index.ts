@@ -7,7 +7,7 @@ import { directoryExists } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import { getLatestPackageVersion, NpmPackage, runNpmBuild, runNpmInstall } from "../utils/npm";
+import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
 import { generateExtension } from "./codegen";
 import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
 import { SemVer } from "semver";
@@ -120,7 +120,7 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
         "@types/node": addSemverCaret(latestNodeTypes),
         nodecg: addSemverCaret(nodecgVersion),
         typescript: addSemverCaret(latestTypeScript),
-        "nodecg-io-core": addSemverCaret(opts.corePackage),
+        "nodecg-io-core": addSemverCaret(opts.corePackage.version),
         ...serviceDeps,
     };
 
@@ -143,13 +143,8 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     await write(content, bundlePath, "package.json");
 }
 
-function addSemverCaret(version: string | SemVer | NpmPackage): string {
-    if (typeof version === "object") {
-        // version is SemVer or NpmPackage and we need to get the underlying version string.
-        return addSemverCaret(version.version);
-    }
-
-    return "^" + version;
+function addSemverCaret(version: string | SemVer): string {
+    return `^${version}`;
 }
 
 async function generateTsConfig(bundlePath: string): Promise<void> {

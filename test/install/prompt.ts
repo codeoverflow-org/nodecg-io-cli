@@ -5,6 +5,7 @@ import { logger } from "../../src/utils/log";
 import { corePackages, dashboardPackage, dashboardPath } from "../../src/nodecgIOVersions";
 import { ProductionInstallation } from "../../src/utils/installation";
 import { corePkg, twitchChatPkg } from "../testUtils";
+import { SemVer } from "semver";
 
 describe("getCompatibleVersions", () => {
     const mock = jest.spyOn(npm, "getMinorVersions").mockResolvedValue(["0.1", "0.2", "1.0", "1.1"]);
@@ -28,7 +29,7 @@ describe("buildPackageList", () => {
     const ver = "0.1";
     const testSvcName = "testSvc";
     const testSvcPkgName = `nodecg-io-${testSvcName}`;
-    const mock = jest.spyOn(npm, "getHighestPatchVersion").mockResolvedValue("0.1.1");
+    const mock = jest.spyOn(npm, "getHighestPatchVersion").mockResolvedValue(new SemVer("0.1.1"));
     afterAll(() => mock.mockReset());
 
     let packages: npm.NpmPackage[];

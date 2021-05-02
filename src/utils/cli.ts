@@ -3,6 +3,7 @@ import { logger } from "./log";
 import * as chalk from "chalk";
 import { getLatestPackageVersion } from "./npm";
 import * as semver from "semver";
+import { SemVer } from "semver";
 
 /**
  * Ensures that the cli is executed with at least node 12. This is the minimum version that is required
@@ -31,7 +32,7 @@ export async function checkForCliUpdate(): Promise<void> {
     try {
         const newestVersion = await getLatestPackageVersion(cliPkgName);
 
-        if (newestVersion && newestVersion !== cliVersion) {
+        if (newestVersion && semver.gt(newestVersion, cliVersion)) {
             logUpdateOnExit(newestVersion);
         }
     } catch (e) {
@@ -39,7 +40,7 @@ export async function checkForCliUpdate(): Promise<void> {
     }
 }
 
-function logUpdateOnExit(newestVersion: string) {
+function logUpdateOnExit(newestVersion: SemVer) {
     process.on("exit", () => {
         logger.info(
             `There is a nodecg-io-cli update available: ${chalk.yellow(cliVersion)} -> ${chalk.green(newestVersion)}`,
