@@ -1,5 +1,10 @@
 import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from "axios";
-import { getHighestPatchVersion, getMinorVersions, getPackageVersions } from "../../../src/utils/npm";
+import {
+    getHighestPatchVersion,
+    getLatestPackageVersion,
+    getMinorVersions,
+    getPackageVersions,
+} from "../../../src/utils/npm";
 import { corePkg, invalidPkgName, twitchChatPkg } from "../../testUtils";
 
 const versions = ["0.1.0", "0.1.1", "0.1.2", "0.2.0"];
@@ -71,5 +76,15 @@ describe("getHighestPatchVersion", () => {
     test("should return the highest version of the passed minor version", async () => {
         await expect(getHighestPatchVersion(corePkg.name, "0.1")).resolves.toStrictEqual("0.1.2");
         await expect(getHighestPatchVersion(corePkg.name, "0.2")).resolves.toStrictEqual("0.2.0");
+    });
+});
+
+describe("getLatestPackageVersion", () => {
+    test("should return latest version from latest dist-tag", async () => {
+        await expect(getLatestPackageVersion(corePkg.name)).resolves.toBe("0.2.0");
+    });
+
+    test("should error when requesting version from nonexistent package", async () => {
+        await expect(getLatestPackageVersion(invalidPkgName)).rejects.toThrow("404");
     });
 });

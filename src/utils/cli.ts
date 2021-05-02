@@ -1,7 +1,7 @@
 import { version as cliVersion, name as cliPkgName } from "../../package.json";
 import { logger } from "./log";
 import * as chalk from "chalk";
-import { getPackageVersions } from "../utils/npm";
+import { getLatestPackageVersion } from "./npm";
 import * as semver from "semver";
 
 /**
@@ -29,10 +29,9 @@ export function ensureNode12(): void {
  */
 export async function checkForCliUpdate(): Promise<void> {
     try {
-        const versions = await getPackageVersions(cliPkgName);
-        const newestVersion = versions[versions.length - 1];
+        const newestVersion = await getLatestPackageVersion(cliPkgName);
 
-        if (cliVersion !== newestVersion) {
+        if (newestVersion && newestVersion !== cliVersion) {
             logUpdateOnExit(newestVersion);
         }
     } catch (e) {

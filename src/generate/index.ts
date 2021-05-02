@@ -7,7 +7,7 @@ import { directoryExists } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import { runNpmBuild, runNpmInstall } from "../utils/npm";
+import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
 import { generateExtension } from "./codegen";
 import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
 
@@ -109,10 +109,14 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, "^" + pkg.version]));
     const nodecgVersion = await getNodeCGVersion(nodecgDir);
 
+    logger.debug("Fetching latest typescript and @types/node versions...");
+    const latestNodeTypes = await getLatestPackageVersion("@types/node");
+    const latestTypeScript = await getLatestPackageVersion("typescript");
+
     const dependencies = {
-        "@types/node": "^15.0.1", // TODO: maybe fetch newest version automatically
+        "@types/node": "^" + latestNodeTypes,
         nodecg: "^" + nodecgVersion, // TODO: create extra function to add semver caret operator to a version
-        typescript: "^4.2.4",
+        typescript: "^" + latestTypeScript,
         "nodecg-io-core": "^" + opts.corePackage.version,
         ...serviceDeps,
     };
