@@ -61,10 +61,14 @@ export async function getPackageVersions(packageName: string): Promise<string[]>
  * @param packageName the package for which you want to get the latest published version.
  * @return the latest version if the package was found and null if the package was not found on the npm registry.
  */
-export async function getLatestPackageVersion(packageName: string): Promise<string | undefined> {
+export async function getLatestPackageVersion(packageName: string): Promise<string> {
     const response = await axios(npmRegistryEndpoint + packageName);
     // Gets version through npm tag "latest" so we don't use any pre-release or beta versions
-    return response.data["dist-tags"]["latest"];
+    const latest = response.data["dist-tags"]["latest"];
+    if (!latest) {
+        throw new Error(`Metadata response for ${packageName} does not contain a latest dist-tag.`);
+    }
+    return latest;
 }
 
 /**

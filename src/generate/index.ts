@@ -7,9 +7,10 @@ import { directoryExists } from "../utils/fs";
 import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
+import { getLatestPackageVersion, NpmPackage, runNpmBuild, runNpmInstall } from "../utils/npm";
 import { generateExtension } from "./codegen";
 import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
+import { SemVer } from "semver";
 
 const defaultTsConfigJson = {
     compilerOptions: {
@@ -106,7 +107,7 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     if (!opts.servicePackages) throw new Error("servicePackages undefined");
     if (!opts.corePackage) throw new Error("corePackage undefined");
 
-    const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, "^" + pkg.version]));
+    const serviceDeps = Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]));
     const nodecgVersion = await getNodeCGVersion(nodecgDir);
 
     logger.debug("Fetching latest typescript and @types/node versions...");
@@ -114,10 +115,10 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     const latestTypeScript = await getLatestPackageVersion("typescript");
 
     const dependencies = {
-        "@types/node": "^" + latestNodeTypes,
-        nodecg: "^" + nodecgVersion, // TODO: create extra function to add semver caret operator to a version
-        typescript: "^" + latestTypeScript,
-        "nodecg-io-core": "^" + opts.corePackage.version,
+        "@types/node": addSemverCaret(latestNodeTypes),
+        nodecg: addSemverCaret(nodecgVersion),
+        typescript: addSemverCaret(latestTypeScript),
+        "nodecg-io-core": addSemverCaret(opts.corePackage),
         ...serviceDeps,
     };
 
@@ -126,7 +127,7 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
         version: opts.version.version,
         private: true,
         nodecg: {
-            compatibleRange: "^1.4.0",
+            compatibleRange: addSemverCaret("1.4.0"),
             bundleDependencies: serviceDeps,
         },
         scripts: {
@@ -138,6 +139,15 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
     };
 
     await write(content, bundlePath, "package.json");
+}
+
+function addSemverCaret(version: string | SemVer | NpmPackage): string {
+    if (typeof version === "object") {
+        // version is SemVer or NpmPackage and we need to get the underlying version string.
+        return addSemverCaret(version.version);
+    }
+
+    return "^" + version;
 }
 
 async function generateTsConfig(bundlePath: string): Promise<void> {
