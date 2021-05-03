@@ -96,7 +96,6 @@ export async function promptGenerationOpts(
             name: "dashboard",
             message: "Do you want to create a dashboard?",
         },
-        // TODO: gitignore? if user wants to make a git repo out of it at some point
         // TODO: license
     ]);
 

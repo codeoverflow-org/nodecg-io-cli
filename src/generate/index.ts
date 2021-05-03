@@ -93,6 +93,7 @@ async function generateBundle(
     // All of these calls only generate files if they are set accordingly in the GenerationOptions
     await genPackageJson(nodecgDir, opts);
     await genTsConfig(opts);
+    await genGitIgnore(opts);
     await genExtension(opts, install);
     await genGraphic(opts);
     await genDashboard(opts);
@@ -170,6 +171,13 @@ async function genTsConfig(opts: GenerationOptions): Promise<void> {
     if (opts.language === "typescript") {
         await write(defaultTsConfigJson, opts.bundlePath, "tsconfig.json");
     }
+}
+
+async function genGitIgnore(opts: GenerationOptions): Promise<void> {
+    const languageIgnoredFiles = opts.language === "typescript" ? ["/extension/*.js", "/extension/*.js.map"] : [];
+    const ignoreEntries = ["/node_modules/", "/.vscode/", "/.idea/", ...languageIgnoredFiles];
+    const content = ignoreEntries.join("\n");
+    await write(content, opts.bundlePath, ".gitignore");
 }
 
 export async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {
