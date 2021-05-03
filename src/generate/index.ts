@@ -8,7 +8,7 @@ import { ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
-import { generateExtension } from "./extension";
+import { genExtension } from "./extension";
 import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
 import { SemVer } from "semver";
 import { genDashboard, genGraphic, genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
@@ -76,14 +76,13 @@ async function generateBundle(
     install: ProductionInstallation,
 ): Promise<void> {
     // Create dir if necessary
-    const bundlePath = path.join(opts.bundleDir, opts.bundleName);
-    if (!(await directoryExists(bundlePath))) {
-        await fs.promises.mkdir(bundlePath);
+    if (!(await directoryExists(opts.bundlePath))) {
+        await fs.promises.mkdir(opts.bundlePath);
     }
 
-    const filesInBundleDir = await fs.promises.readdir(bundlePath);
+    const filesInBundleDir = await fs.promises.readdir(opts.bundlePath);
     if (filesInBundleDir.length > 0) {
-        logger.error(`Directory for bundle at ${bundlePath} already exists and contains files.`);
+        logger.error(`Directory for bundle at ${opts.bundlePath} already exists and contains files.`);
         logger.error("Please make sure that you don't have a bundle with the same name already.");
         logger.error(
             `Also you cannot use this tool to add nodecg-io to a already existing bundle. It only supports generating new ones.`,
@@ -91,39 +90,25 @@ async function generateBundle(
         process.exit(1);
     }
 
-    await generatePackageJson(nodecgDir, bundlePath, opts);
-
-    // TS needs its tsconfig.json compiler configuration
-    if (opts.language === "typescript") {
-        await generateTsConfig(bundlePath);
-    }
-
-    if (opts.graphic) {
-        await genGraphic(opts, bundlePath);
-    }
-
-    if (opts.dashboard) {
-        await genDashboard(opts, bundlePath);
-    }
-
-    await generateExtension(bundlePath, opts, install);
+    // All of these calls only generate files if they are set accordingly in the GenerationOptions
+    await genPackageJson(nodecgDir, opts);
+    await genTsConfig(opts);
+    await genExtension(opts, install);
+    await genGraphic(opts);
+    await genDashboard(opts);
     logger.info("Generated bundle successfully.");
 
     logger.info("Installing dependencies...");
-    await runNpmInstall(bundlePath, false);
+    await runNpmInstall(opts.bundlePath, false);
 
     // JavaScript does not to be compiled
     if (opts.language === "typescript") {
         logger.info("Compiling bundle...");
-        await runNpmBuild(bundlePath);
+        await runNpmBuild(opts.bundlePath);
     }
 }
 
-async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: GenerationOptions): Promise<void> {
-    // This shouldn't happen...
-    if (!opts.servicePackages) throw new Error("servicePackages undefined");
-    if (!opts.corePackage) throw new Error("corePackage undefined");
-
+async function genPackageJson(nodecgDir: string, opts: GenerationOptions): Promise<void> {
     const serviceDeps: [string, string][] = opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]);
 
     const dependencies: [string, string][] = [["nodecg-io-core", addSemverCaret(opts.corePackage.version)]];
@@ -170,17 +155,21 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
         dependencies: Object.fromEntries(dependencies),
     };
 
-    await write(content, bundlePath, "package.json");
+    await write(content, opts.bundlePath, "package.json");
 }
 
 function addSemverCaret(version: string | SemVer): string {
     return `^${version}`;
 }
 
-async function generateTsConfig(bundlePath: string): Promise<void> {
+async function genTsConfig(opts: GenerationOptions): Promise<void> {
     // TODO: do we want to support ts in dashboard/graphic out of the box?
     // If not we shouldn't try to compile them.
-    await write(defaultTsConfigJson, bundlePath, "tsconfig.json");
+
+    // Only TS needs its tsconfig.json compiler configuration
+    if (opts.language === "typescript") {
+        await write(defaultTsConfigJson, opts.bundlePath, "tsconfig.json");
+    }
 }
 
 export async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {

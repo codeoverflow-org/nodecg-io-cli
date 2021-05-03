@@ -40,12 +40,16 @@ function genPanel(type: PanelType, opts: GenerationOptions): string {
 `;
 }
 
-export async function genGraphic(opts: GenerationOptions, bundlePath: string): Promise<void> {
-    await write(genPanel("graphic", opts), bundlePath, "graphics", graphicFileName);
+export async function genGraphic(opts: GenerationOptions): Promise<void> {
+    if (opts.graphic) {
+        await write(genPanel("graphic", opts), opts.bundlePath, "graphics", graphicFileName);
+    }
 }
 
-export async function genDashboard(opts: GenerationOptions, bundlePath: string): Promise<void> {
-    await write(genPanel("dashboard", opts), bundlePath, "dashboard", dashboardFile);
+export async function genDashboard(opts: GenerationOptions): Promise<void> {
+    if (opts.dashboard) {
+        await write(genPanel("dashboard", opts), opts.bundlePath, "dashboard", dashboardFile);
+    }
 }
 
 // endregion

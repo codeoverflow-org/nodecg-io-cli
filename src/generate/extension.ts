@@ -33,14 +33,7 @@ function getServiceNames(serviceBaseName: string, nodecgIOVersion: string): Serv
     };
 }
 
-export async function generateExtension(
-    bundlePath: string,
-    opts: GenerationOptions,
-    install: ProductionInstallation,
-): Promise<void> {
-    // Shouldn't happen...
-    if (!opts.corePackage) throw new Error("corePackage is undefined");
-
+export async function genExtension(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
     // Generate further information for each service which is needed to generate the bundle extension.
     const services = opts.services.map((svc) => getServiceNames(svc, install.version));
 
@@ -77,7 +70,7 @@ export async function generateExtension(
     });
 
     const fileExtension = opts.language === "typescript" ? "ts" : "js";
-    await write(writer.toString(), bundlePath, "extension", `index.${fileExtension}`);
+    await write(writer.toString(), opts.bundlePath, "extension", `index.${fileExtension}`);
 }
 
 function genImport(writer: CodeBlockWriter, symbolToImport: string, packageName: string, lang: CodeLanguage) {
