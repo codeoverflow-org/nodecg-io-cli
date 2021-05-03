@@ -78,7 +78,7 @@ export function genNodeCGDashboardConfig(opts: GenerationOptions): NodeCGDashboa
         {
             name: "panel",
             title: opts.bundleName,
-            width: 2,
+            width: 3,
             file: dashboardFile,
             headerColor: "#525F78",
         },
