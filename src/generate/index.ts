@@ -11,7 +11,7 @@ import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/np
 import { generateExtension } from "./extension";
 import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
 import { SemVer } from "semver";
-import { genGraphic, genNodeCGGraphicConfig } from "./graphic";
+import { genDashboard, genGraphic, genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
 
 const defaultTsConfigJson = {
     compilerOptions: {
@@ -98,8 +98,12 @@ async function generateBundle(
         await generateTsConfig(bundlePath);
     }
 
-    if (opts.genGraphic) {
-        await genGraphic(opts.bundleName, bundlePath);
+    if (opts.graphic) {
+        await genGraphic(opts, bundlePath);
+    }
+
+    if (opts.dashboard) {
+        await genDashboard(opts, bundlePath);
     }
 
     await generateExtension(bundlePath, opts, install);
@@ -152,6 +156,7 @@ async function generatePackageJson(nodecgDir: string, bundlePath: string, opts: 
             compatibleRange: addSemverCaret("1.4.0"),
             bundleDependencies: Object.fromEntries(serviceDeps),
             graphics: genNodeCGGraphicConfig(opts),
+            dashboardPanels: genNodeCGDashboardConfig(opts),
         },
         // These scripts are for compiling TS and thus are only needed when generating a TS bundle
         scripts:
