@@ -14,7 +14,7 @@ export const corePackages = [corePackage, dashboardPackage];
 // 3. update versionServiceMap and add the service object to the corresponding version.
 
 const version01Services = {
-    akh: "AHKServiceClient",
+    ahk: "AHKServiceClient",
     android: "AndroidServiceClient",
     curseforge: "CurseForgeClient",
     discord: "DiscordServiceClient",
@@ -24,7 +24,7 @@ const version01Services = {
     "midi-output": "MidiOutputServiceClient",
     nanoleaf: "NanoleafServiceClient",
     obs: "OBSServiceClient",
-    hue: "PhilipsHueServiceClient",
+    philipshue: "PhilipsHueServiceClient",
     rcon: "RconServiceClient",
     reddit: "RedditServiceClient",
     "sacn-receiver": "SacnReceiverServiceClient",
