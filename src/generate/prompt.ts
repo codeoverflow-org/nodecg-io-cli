@@ -96,7 +96,6 @@ export async function promptGenerationOpts(
             name: "dashboard",
             message: "Do you want to create a dashboard?",
         },
-        // TODO: license
     ]);
 
     return computeGenOptsFields(opts, install);

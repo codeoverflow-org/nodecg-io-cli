@@ -164,9 +164,6 @@ function addSemverCaret(version: string | SemVer): string {
 }
 
 async function genTsConfig(opts: GenerationOptions): Promise<void> {
-    // TODO: do we want to support ts in dashboard/graphic out of the box?
-    // If not we shouldn't try to compile them.
-
     // Only TS needs its tsconfig.json compiler configuration
     if (opts.language === "typescript") {
         await write(defaultTsConfigJson, opts.bundlePath, "tsconfig.json");
