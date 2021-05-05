@@ -4,7 +4,7 @@ import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
 import { directoryExists } from "../utils/fs";
-import { ProductionInstallation, readInstallInfo } from "../utils/installation";
+import { Installation, ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
@@ -39,38 +39,52 @@ export const generateModule: CommandModule = {
     describe: "generates nodecg bundles that use nodecg-io services",
 
     handler: async () => {
-        const nodecgDir = await findNodeCGDirectory();
-        logger.debug(`Detected nodecg installation at ${nodecgDir}.`);
-        const nodecgIODir = getNodeCGIODirectory(nodecgDir);
-        const install = await readInstallInfo(nodecgIODir);
-        if (install === undefined) {
-            logger.error("nodecg-io is not installed to your local nodecg install.");
-            logger.error(`Please install it first using this command: ${yellowInstallCommand}`);
-            process.exit(1);
-        } else if (install.dev) {
-            logger.error(`You cannot use ${yellowGenerateCommand} together with a development installation.`);
-            process.exit(1);
-        } else if (install.packages.length === corePackages.length) {
-            // just has core packages without any services installed.
-            logger.error(`You first need to have at least one service installed to generate a bundle.`);
-            logger.error(`Please install a service using this command: ${yellowInstallCommand}`);
-            process.exit(1);
-        }
-
-        const opts = await promptGenerationOpts(nodecgDir, install);
-
         try {
+            const nodecgDir = await findNodeCGDirectory();
+            logger.debug(`Detected nodecg installation at ${nodecgDir}.`);
+            const nodecgIODir = getNodeCGIODirectory(nodecgDir);
+            const install = await readInstallInfo(nodecgIODir);
+
+            // Will throw when install is not valid for generating bundles
+            if (!ensureValidInstallation(install)) return;
+
+            const opts = await promptGenerationOpts(nodecgDir, install);
+
             await generateBundle(nodecgDir, opts, install);
+
+            logger.success(`Successfully generated bundle ${opts.bundleName}.`);
         } catch (e) {
-            logger.error(`Couldn't generate bundle: ${e}`);
+            logger.error(`Couldn't generate bundle:\n${e.message ?? e.toString()}`);
             process.exit(1);
         }
-
-        logger.success(`Successfully generated bundle ${opts.bundleName}.`);
     },
 };
 
-async function generateBundle(
+/**
+ * Ensures that a installation can be used to generate bundles, meaning nodecg-io is actually installed,
+ * is not a dev install and has some services installed that can be used.
+ * Throws an error if the installation cannot be used to generate a bundle with an explanation.
+ */
+function ensureValidInstallation(install: Installation | undefined): install is ProductionInstallation {
+    if (install === undefined) {
+        throw new Error(
+            "nodecg-io is not installed to your local nodecg install.\n" +
+                `Please install it first using this command: ${yellowInstallCommand}`,
+        );
+    } else if (install.dev) {
+        throw new Error(`You cannot use ${yellowGenerateCommand} together with a development installation.`);
+    } else if (install.packages.length === corePackages.length) {
+        // just has core packages without any services installed.
+        throw new Error(
+            `You first need to have at least one service installed to generate a bundle.\n` +
+                `Please install a service using this command: ${yellowInstallCommand}`,
+        );
+    }
+
+    return true;
+}
+
+export async function generateBundle(
     nodecgDir: string,
     opts: GenerationOptions,
     install: ProductionInstallation,
@@ -80,14 +94,14 @@ async function generateBundle(
         await fs.promises.mkdir(opts.bundlePath);
     }
 
+    // In case some re-executes the command in a already used bundle name we should not overwrite their stuff and error instead.
     const filesInBundleDir = await fs.promises.readdir(opts.bundlePath);
     if (filesInBundleDir.length > 0) {
-        logger.error(`Directory for bundle at ${opts.bundlePath} already exists and contains files.`);
-        logger.error("Please make sure that you don't have a bundle with the same name already.");
-        logger.error(
-            `Also you cannot use this tool to add nodecg-io to a already existing bundle. It only supports generating new ones.`,
+        throw new Error(
+            `Directory for bundle at ${opts.bundlePath} already exists and contains files.\n` +
+                "Please make sure that you don't have a bundle with the same name already.\n" +
+                `Also you cannot use this tool to add nodecg-io to a already existing bundle. It only supports generating new ones.`,
         );
-        process.exit(1);
     }
 
     // All of these calls only generate files if they are set accordingly in the GenerationOptions
