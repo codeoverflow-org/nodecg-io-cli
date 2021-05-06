@@ -2,7 +2,7 @@ import CodeBlockWriter from "code-block-writer";
 import { getServiceClientName } from "../nodecgIOVersions";
 import { ProductionInstallation } from "../utils/installation";
 import { CodeLanguage, GenerationOptions } from "./prompt";
-import { write } from "./index";
+import { writeBundleFile } from "./utils";
 
 interface ServiceNames {
     name: string;
@@ -70,7 +70,7 @@ export async function genExtension(opts: GenerationOptions, install: ProductionI
     });
 
     const fileExtension = opts.language === "typescript" ? "ts" : "js";
-    await write(writer.toString(), opts.bundlePath, "extension", `index.${fileExtension}`);
+    await writeBundleFile(writer.toString(), opts.bundlePath, "extension", `index.${fileExtension}`);
 }
 
 function genImport(writer: CodeBlockWriter, symbolToImport: string, packageName: string, lang: CodeLanguage) {

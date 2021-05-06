@@ -1,5 +1,5 @@
 import { GenerationOptions } from "./prompt";
-import { write } from "./index";
+import { writeBundleFile } from "./utils";
 
 type PanelType = "graphic" | "dashboard";
 
@@ -42,13 +42,13 @@ function genPanel(type: PanelType, opts: GenerationOptions): string {
 
 export async function genGraphic(opts: GenerationOptions): Promise<void> {
     if (opts.graphic) {
-        await write(genPanel("graphic", opts), opts.bundlePath, "graphics", graphicFileName);
+        await writeBundleFile(genPanel("graphic", opts), opts.bundlePath, "graphics", graphicFileName);
     }
 }
 
 export async function genDashboard(opts: GenerationOptions): Promise<void> {
     if (opts.dashboard) {
-        await write(genPanel("dashboard", opts), opts.bundlePath, "dashboard", dashboardFile);
+        await writeBundleFile(genPanel("dashboard", opts), opts.bundlePath, "dashboard", dashboardFile);
     }
 }
 

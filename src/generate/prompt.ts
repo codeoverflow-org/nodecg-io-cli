@@ -4,7 +4,7 @@ import * as path from "path";
 import { directoryExists } from "../utils/fs";
 import { ProductionInstallation } from "../utils/installation";
 import { getServicesFromInstall } from "../install/prompt";
-import { yellowInstallCommand } from ".";
+import { yellowInstallCommand } from "./utils";
 import { NpmPackage } from "../utils/npm";
 import { corePackage } from "../nodecgIOVersions";
 
@@ -101,6 +101,8 @@ export async function promptGenerationOpts(
     return computeGenOptsFields(opts, install);
 }
 
+// region prompt validation
+
 function validateBundleName(str: string): true | string {
     if (str.length === 0) {
         return "You must provide a bundle name.";
@@ -136,6 +138,16 @@ function validateServiceSelection(services: string[]): true | string {
     }
 }
 
+// endregion
+
+/**
+ * Converts a {@link PromptedGenerationOptions} to a {@link GenerationOptions} by computing the fields
+ * that {@link GenerationOptions} has using the passed installation.
+ *
+ * @param opts the prompted generation options
+ * @param install the current nodecg-io installation. Used to get installed packages/exact versions.
+ * @return opts including computed fields.
+ */
 export function computeGenOptsFields(
     opts: PromptedGenerationOptions,
     install: ProductionInstallation,

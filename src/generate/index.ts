@@ -1,38 +1,17 @@
 import { CommandModule } from "yargs";
-import * as chalk from "chalk";
-import * as path from "path";
 import * as fs from "fs";
 import { logger } from "../utils/log";
 import { directoryExists } from "../utils/fs";
 import { Installation, ProductionInstallation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import { getLatestPackageVersion, runNpmBuild, runNpmInstall } from "../utils/npm";
+import { runNpmBuild, runNpmInstall } from "../utils/npm";
 import { genExtension } from "./extension";
-import { findNodeCGDirectory, getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
-import { SemVer } from "semver";
-import { genDashboard, genGraphic, genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
-
-const defaultTsConfigJson = {
-    compilerOptions: {
-        target: "es2019",
-        sourceMap: true,
-        lib: ["es2019"],
-        alwaysStrict: true,
-        forceConsistentCasingInFileNames: true,
-        noFallthroughCasesInSwitch: true,
-        noImplicitAny: true,
-        noImplicitReturns: true,
-        noImplicitThis: true,
-        strictNullChecks: true,
-        skipLibCheck: true,
-        module: "CommonJS",
-        types: ["node"],
-    },
-};
-
-export const yellowInstallCommand = chalk.yellow("nodecg-io install");
-const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
+import { genDashboard, genGraphic } from "./panel";
+import { genTsConfig } from "./tsConfig";
+import { writeBundleFile, yellowGenerateCommand, yellowInstallCommand } from "./utils";
+import { genPackageJson } from "./packageJson";
 
 export const generateModule: CommandModule = {
     command: "generate",
@@ -123,85 +102,9 @@ export async function generateBundle(
     }
 }
 
-async function genPackageJson(nodecgDir: string, opts: GenerationOptions): Promise<void> {
-    const serviceDeps: [string, string][] = opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]);
-
-    const dependencies: [string, string][] = [["nodecg-io-core", addSemverCaret(opts.corePackage.version)]];
-
-    // When we use JS we only need core for requireService etc. and if we TS we also need nodecg, ts, types for node and
-    // each service for typings.
-    if (opts.language === "typescript") {
-        dependencies.push(...serviceDeps);
-
-        logger.debug("Fetching latest typescript and @types/node versions...");
-        const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
-            getNodeCGVersion(nodecgDir),
-            getLatestPackageVersion("@types/node"),
-            getLatestPackageVersion("typescript"),
-        ]);
-
-        dependencies.push(
-            ["nodecg", addSemverCaret(nodecgVersion)],
-            ["@types/node", addSemverCaret(latestNodeTypes)],
-            ["typescript", addSemverCaret(latestTypeScript)],
-        );
-        dependencies.sort();
-    }
-
-    const content = {
-        name: opts.bundleName,
-        version: opts.version.version,
-        private: true,
-        nodecg: {
-            compatibleRange: addSemverCaret("1.4.0"),
-            bundleDependencies: Object.fromEntries(serviceDeps),
-            graphics: genNodeCGGraphicConfig(opts),
-            dashboardPanels: genNodeCGDashboardConfig(opts),
-        },
-        // These scripts are for compiling TS and thus are only needed when generating a TS bundle
-        scripts:
-            opts.language === "typescript"
-                ? {
-                      build: "tsc -b",
-                      watch: "tsc -b -w",
-                      clean: "tsc -b --clean",
-                  }
-                : undefined,
-        dependencies: Object.fromEntries(dependencies),
-    };
-
-    await write(content, opts.bundlePath, "package.json");
-}
-
-function addSemverCaret(version: string | SemVer): string {
-    return `^${version}`;
-}
-
-async function genTsConfig(opts: GenerationOptions): Promise<void> {
-    // Only TS needs its tsconfig.json compiler configuration
-    if (opts.language === "typescript") {
-        await write(defaultTsConfigJson, opts.bundlePath, "tsconfig.json");
-    }
-}
-
 async function genGitIgnore(opts: GenerationOptions): Promise<void> {
     const languageIgnoredFiles = opts.language === "typescript" ? ["/extension/*.js", "/extension/*.js.map"] : [];
     const ignoreEntries = ["/node_modules/", "/.vscode/", "/.idea/", ...languageIgnoredFiles];
     const content = ignoreEntries.join("\n");
-    await write(content, opts.bundlePath, ".gitignore");
-}
-
-export async function write(content: string | Record<string, unknown>, ...paths: string[]): Promise<void> {
-    const finalPath = path.join(...paths);
-
-    logger.debug(`Writing file at ${finalPath}`);
-
-    // Create directory if missing
-    const parent = path.dirname(finalPath);
-    if (!(await directoryExists(parent))) {
-        await fs.promises.mkdir(parent);
-    }
-
-    const str = typeof content === "string" ? content : JSON.stringify(content, null, 4);
-    await fs.promises.writeFile(finalPath, str);
+    await writeBundleFile(content, opts.bundlePath, ".gitignore");
 }
