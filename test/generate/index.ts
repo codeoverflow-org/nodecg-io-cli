@@ -113,7 +113,7 @@ describe("genPackageJson", () => {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async function genPackageJSON(opts: GenerationOptions = defaultOpts): Promise<any> {
         await generateBundle(fsRoot, opts, validProdInstall);
-        const packageJsonStr = vol.toJSON()[packageJsonPath];
+        const packageJsonStr = await vol.promises.readFile(packageJsonPath);
         if (!packageJsonStr) throw new Error("package.json does not exist");
         return JSON.parse(packageJsonStr.toString());
     }
