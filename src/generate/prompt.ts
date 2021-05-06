@@ -136,7 +136,10 @@ function validateServiceSelection(services: string[]): true | string {
     }
 }
 
-function computeGenOptsFields(opts: PromptedGenerationOptions, install: ProductionInstallation): GenerationOptions {
+export function computeGenOptsFields(
+    opts: PromptedGenerationOptions,
+    install: ProductionInstallation,
+): GenerationOptions {
     const corePkg = install.packages.find((pkg) => pkg.name === corePackage);
     if (corePkg === undefined) {
         throw new Error("Core package in installation info could not be found.");

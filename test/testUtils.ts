@@ -49,11 +49,16 @@ export const validDevInstall: DevelopmentInstallation = {
 };
 export const validProdInstall: ProductionInstallation = {
     dev: false,
-    version: "0.1.0",
-    packages: [],
+    version: "0.1",
+    packages: [corePkg, dashboardPkg, twitchChatPkg],
 };
 export const testDir = path.join(fsRoot, "testDir");
 export const nodecgIODir = path.join(fsRoot, "nodecg-io");
+export const nodecgPackageJson = {
+    name: "nodecg",
+    version: "1.8.0",
+};
+export const nodecgPackageJsonStr = JSON.stringify(nodecgPackageJson);
 
 temp.track();
 afterEach(() => temp.cleanup());

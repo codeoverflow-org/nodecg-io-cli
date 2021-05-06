@@ -1,16 +1,11 @@
 import * as path from "path";
 import { createFsFromVolume, vol } from "memfs";
-import { testDir } from "../testUtils";
+import { nodecgPackageJsonStr, testDir } from "../testUtils";
 import { findNodeCGDirectory, getNodeCGVersion } from "../../src/utils/nodecgInstallation";
 import { SemVer } from "semver";
 
 jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
-
-const examplePackageJsonStr = JSON.stringify({
-    name: "nodecg",
-    version: "1.8.0",
-});
 
 const nodecgDir = path.join(testDir, "nodecg");
 const nodecgSubDir = path.join(nodecgDir, "subDirectory");
@@ -22,7 +17,7 @@ beforeEach(async () => {
     await vol.promises.mkdir(nodecgSubDir);
 
     // Fake package.json of a real nodecg install
-    await vol.promises.writeFile(packageJsonFile, examplePackageJsonStr);
+    await vol.promises.writeFile(packageJsonFile, nodecgPackageJsonStr);
 });
 
 describe("findNodeCGDirectory", () => {

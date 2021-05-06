@@ -70,7 +70,7 @@ describe("removePackages", () => {
         const i = { ...validProdInstall, packages: [...packages] };
         await removePackages(packages, i, nodecgIODir);
         expect(writeInstallInfoMock).toHaveBeenCalledTimes(2);
-        expect(writeInstallInfoMock).toHaveBeenLastCalledWith(nodecgIODir, validProdInstall);
+        expect(writeInstallInfoMock).toHaveBeenLastCalledWith(nodecgIODir, { ...validProdInstall, packages: [] });
     });
 });
 
