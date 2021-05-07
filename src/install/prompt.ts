@@ -1,19 +1,23 @@
-import { Installation, ProductionInstallation } from "../installation";
+import { Installation, ProductionInstallation } from "../utils/installation";
 import * as inquirer from "inquirer";
-import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npm";
+import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm";
 import * as semver from "semver";
-import { logger } from "../log";
+import { logger } from "../utils/log";
 import {
     corePackage,
     corePackages,
     dashboardPackage,
+    dashboardPath,
     developmentVersion,
     getServicesForVersion,
     supportedNodeCGIORange,
-} from "./nodecgIOVersions";
+} from "../nodecgIOVersions";
 
-interface PromptVersionInput {
+interface PromptInput {
     version: string;
+    useSamples?: boolean;
+    cloneDocs?: boolean;
+    services?: string[];
 }
 
 /**
@@ -26,7 +30,10 @@ interface PromptVersionInput {
 export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
     const versions = await getCompatibleVersions();
 
-    const res = await inquirer.prompt([
+    const currentProd = currentInstall !== undefined && !currentInstall.dev ? currentInstall : undefined;
+    const currentDev = currentInstall !== undefined && currentInstall.dev ? currentInstall : undefined;
+
+    const promptInput = await inquirer.prompt([
         {
             type: "list",
             name: "version",
@@ -35,30 +42,52 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             loop: false,
             default: currentInstall?.version ?? versions.slice(-1)[0],
         },
+        // Options for development installs
         {
             type: "confirm",
             name: "useSamples",
             message: "Would you like to use the provided samples?",
-            when: (x: PromptVersionInput) => x.version === developmentVersion,
-            default: currentInstall !== undefined && currentInstall.dev && currentInstall.useSamples,
+            when: (x: PromptInput) => x.version === developmentVersion,
+            default: currentDev?.useSamples ?? false,
         },
+        {
+            type: "confirm",
+            name: "cloneDocs",
+            message: "Would you like to clone the documentation?",
+            when: (x: PromptInput) => x.version === developmentVersion,
+            default: currentDev?.cloneDocs ?? true,
+        },
+        // Options for production installs
         {
             type: "checkbox",
             name: "services",
             message: "Which services do you want to use?",
-            choices: (x: PromptVersionInput) => getServicesForVersion(x.version),
-            when: (x: PromptVersionInput) => x.version !== developmentVersion,
-            default: (x: PromptVersionInput) => {
-                if (!currentInstall || currentInstall?.dev) return;
-                return getServicesFromInstall(currentInstall, x.version);
+            choices: (x: PromptInput) => getServicesForVersion(x.version),
+            when: (x: PromptInput) => x.version !== developmentVersion,
+            default: (x: PromptInput) => {
+                if (!currentProd) return;
+                return getServicesFromInstall(currentProd, x.version);
             },
         },
     ]);
 
-    if (res.version === developmentVersion) {
-        return { ...res, dev: true };
+    return await processPromptInput(promptInput);
+}
+
+export async function processPromptInput(input: PromptInput): Promise<Installation> {
+    if (input.version === developmentVersion) {
+        return {
+            version: input.version,
+            dev: true,
+            useSamples: input.useSamples ?? false,
+            cloneDocs: input.cloneDocs ?? false,
+        };
     } else {
-        return { ...res, dev: false, packages: await buildPackageList(res.version, res.services), services: undefined };
+        return {
+            version: input.version,
+            dev: false,
+            packages: await buildPackageList(input.version, input.services ?? []),
+        };
     }
 }
 
@@ -66,12 +95,12 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
  * Gets all nodecg-io minor versions and checks which are compatible with this cli version (major.minor equals or less).
  * @returns compatible versions of nodecg-io
  */
-async function getCompatibleVersions(): Promise<string[]> {
+export async function getCompatibleVersions(includeRange: semver.Range = supportedNodeCGIORange): Promise<string[]> {
     const all = await getMinorVersions(corePackage);
     const notCompatibleVersions: string[] = [];
 
     const filtered = all.filter((v) => {
-        if (semver.satisfies(`${v}.0`, supportedNodeCGIORange)) {
+        if (semver.satisfies(`${v}.0`, includeRange)) {
             return true;
         } else {
             notCompatibleVersions.push(v);
@@ -94,32 +123,62 @@ async function getCompatibleVersions(): Promise<string[]> {
  * @param services the service you want
  * @returns resolved packages with the most up to date patch version.
  */
-async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
-    const promises = [...corePackages, ...services.map((name) => `nodecg-io-${name}`)].map(async (pkgName) => ({
+export async function buildPackageList(version: string, services: string[]): Promise<NpmPackage[]> {
+    const servicePackageNames = services.map((name) => `nodecg-io-${name}`);
+    const packageNames = corePackages.concat(servicePackageNames);
+
+    const resolvePromises = packageNames.map(async (pkgName) => ({
         name: pkgName,
-        simpleName: pkgName.replace("nodecg-io-", ""),
-        path: pkgName === dashboardPackage ? `${corePackage}/dashboard` : pkgName,
-        version: (await getHighestPatchVersion(pkgName, version)) ?? `${version}.0`,
+        path: getPackagePath(pkgName),
+        version: await getPackageVersion(pkgName, version),
+        symlink: getPackageSymlinks(pkgName),
     }));
 
-    return await Promise.all(promises);
+    return await Promise.all(resolvePromises);
+}
+
+function getPackagePath(pkgName: string) {
+    // Special case: dashboard needs to be in nodecg-io-core/dashboard
+    if (pkgName === dashboardPackage) {
+        return dashboardPath;
+    }
+
+    // Normal case: package should go in directory named after the package
+    // this includes all services.
+    return pkgName;
+}
+
+async function getPackageVersion(pkgName: string, minorVersion: string) {
+    const version = await getHighestPatchVersion(pkgName, minorVersion);
+    // if patch part could be found out we will use .0 as it should always exist if the minor version also does.
+    return version?.version ?? `${minorVersion}.0`;
+}
+
+function getPackageSymlinks(pkgName: string) {
+    // special case: dashboard needs monaco-editor to be symlink into the local node_modules directory.
+    if (pkgName === dashboardPackage) {
+        return ["monaco-editor"];
+    }
+
+    // normal case: usually we don't need symlinks because node walks up the fs to find the hoisted node_modules directory.
+    return undefined;
 }
 
 /**
  * Returns the list of installed services of a production installation.
  * @param install the installation info for which you want the list of installed services.
  * @param targetVersion the version of nodecg-io that is installed
- * @returns the list of installed services (simpleName of the packages without the nodecg-io- prefix)
+ * @returns the list of installed services (package names without the nodecg-io- prefix)
  */
-function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
+export function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
     const availableServices = getServicesForVersion(targetVersion);
 
-    const svcPackages = install?.packages
+    const svcPackages = install.packages
         // Exclude core packages, they are not a optional service, they are always required
         .filter((pkg) => !corePackages.find((corePkg) => pkg.name === corePkg))
+        .map((pkg) => pkg.name.replace("nodecg-io-", ""))
         // Filter out services that aren't available in this version. The install might be of a higher version where this service is available
-        .filter((pkg) => availableServices.includes(pkg.simpleName));
+        .filter((pkgName) => availableServices.includes(pkgName));
 
-    // simpleName = service name.
-    return svcPackages?.map((pkg) => pkg.simpleName) ?? [];
+    return svcPackages ?? [];
 }

@@ -1,15 +1,16 @@
-import { ProductionInstallation, writeInstallInfo } from "../installation";
+import { ProductionInstallation, writeInstallInfo } from "../utils/installation";
 import {
-    extractNpmPackageTar,
-    createNpmPackageReadStream,
     NpmPackage,
     removeNpmPackage,
     isPackageEquals,
     runNpmInstall,
     buildNpmPackagePath,
-} from "../npm";
-import { directoryExists, ensureDirectory } from "../fsUtils";
-import { logger } from "../log";
+    downloadNpmPackage,
+    createNpmSymlinks,
+    getSubPackages,
+} from "../utils/npm";
+import { directoryExists, ensureDirectory } from "../utils/fs";
+import { logger } from "../utils/log";
 import { promises as fs } from "fs";
 import path = require("path");
 import chalk = require("chalk");
@@ -53,13 +54,24 @@ export function diffPackages(
     requested: NpmPackage[],
     current: NpmPackage[],
 ): { pkgInstall: NpmPackage[]; pkgRemove: NpmPackage[] } {
+    // currently installed but not requested exactly anymore
+    const pkgRemove = current.filter((a) => !requested.find((b) => isPackageEquals(a, b)));
+
+    // requested and not already exactly installed (e.g. version change)
+    const pkgInstall = requested.filter((a) => !current.find((b) => isPackageEquals(a, b)));
+
+    // Gets sub-packages of packages in pkgInstall that might not be in there.
+    // E.g. core got upgraded => nodecg-io-core will be removed and reinstalled
+    // nodecg-io-dashboard will also be removed because it is in nodecg-io-core and
+    // contained in the directory of the core package. This ensures that the dashboard will
+    // also be reinstalled, even though it got no upgrade.
+    const installAdditional = pkgInstall.map((pkg) => getSubPackages(requested, pkg)).flat();
+
     return {
-        pkgInstall: requested.filter((a) => !current.find((b) => isPackageEquals(a, b))), // requested and not already exactly installed (e.g. version change)
-        pkgRemove: current.filter((a) => !requested.find((b) => isPackageEquals(a, b))), // currently installed but not requested exactly anymore
+        pkgRemove,
+        pkgInstall: [...new Set(pkgInstall.concat(installAdditional))],
     };
 }
-
-// TODO: handle when e.g. core upgrades and removes nodecg-io-core directory. Need to re-download dashboard because it got deleted (or don't delete it).
 
 /**
  * Removes a list of packages from a production nodecg-io install.
@@ -67,7 +79,11 @@ export function diffPackages(
  * @param state the current installation info that will be updated with the removals
  * @param nodecgIODir the nodecg-io directory in which the packages will be removed
  */
-async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function removePackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     for (const pkg of pkgs) {
         logger.debug(`Removing package ${pkg.name} (${pkg.version})...`);
         await removeNpmPackage(pkg, nodecgIODir);
@@ -83,7 +99,11 @@ async function removePackages(pkgs: NpmPackage[], state: ProductionInstallation,
  * @param state the current install state that will be updated with the newly added packages
  * @param nodecgIODir the directory in which nodecg-io is installed an and the new packages should be installed into
  */
-async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function installPackages(
+    pkgs: NpmPackage[],
+    state: ProductionInstallation,
+    nodecgIODir: string,
+): Promise<void> {
     const count = pkgs.length;
     logger.info(`Downloading ${count} packages...`);
 
@@ -93,7 +113,7 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
         process.stdout.write("\r" + chalk.dim(text));
     };
 
-    const downloadPromises = pkgs.map((pkg) => fetchSinglePackage(pkg, nodecgIODir).then(updateStatus));
+    const downloadPromises = pkgs.map((pkg) => downloadNpmPackage(pkg, nodecgIODir).then(updateStatus));
     await Promise.all(downloadPromises);
     logger.info(""); // add newline after the progress indicator which always operates on the same line.
 
@@ -107,17 +127,17 @@ async function installPackages(pkgs: NpmPackage[], state: ProductionInstallation
         throw e;
     }
 
+    await createSymlinks(pkgs, nodecgIODir);
     await saveProgress(state, nodecgIODir, pkgs, true);
 }
 
 /**
- * Fetches and extracts a single package from the official npm registry.
- * @param pkg the package to download
- * @param nodecgIODir the root directory in which the package with the package path will be fetched into
+ * Creates the symlinks for all non-hoisted packages. (E.g. monaco-editor for the dashboard)
  */
-async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    const tarStream = await createNpmPackageReadStream(pkg);
-    await extractNpmPackageTar(pkg, tarStream, nodecgIODir);
+async function createSymlinks(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
+    logger.debug("Creating symlinks...");
+    await createNpmSymlinks(pkgs, nodecgIODir);
+    logger.debug("Successfully created symlinks.");
 }
 
 /**
@@ -129,7 +149,7 @@ async function fetchSinglePackage(pkg: NpmPackage, nodecgIODir: string): Promise
  */
 async function installNpmDependencies(pkgs: NpmPackage[], nodecgIODir: string): Promise<void> {
     await writeWorkspacePackageJson(pkgs, nodecgIODir);
-    await runNpmInstall(nodecgIODir);
+    await runNpmInstall(nodecgIODir, true);
 }
 
 /**
@@ -177,10 +197,10 @@ async function saveProgress(
  * @param state the current install
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
-async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
+export async function validateInstall(state: ProductionInstallation, nodecgIODir: string): Promise<void> {
     const pkgs = state.packages;
     const p = pkgs.map(async (pkg) => {
-        const pkgPath = buildNpmPackagePath(nodecgIODir, pkg);
+        const pkgPath = buildNpmPackagePath(pkg, nodecgIODir);
         if (!(await directoryExists(pkgPath))) {
             // package is not at the expected location, it may have been deleted by the user.
             // Remove from current state.

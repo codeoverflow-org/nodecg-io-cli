@@ -1,8 +1,9 @@
 import path = require("path");
 import { CommandModule } from "yargs";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../fsUtils";
-import { logger } from "../log";
-import { manageBundleDir } from "../nodecgConfig";
+import { directoryExists, removeDirectory } from "../utils/fs";
+import { logger } from "../utils/log";
+import { manageBundleDir } from "../utils/nodecgConfig";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
 
 export const uninstallModule: CommandModule = {
     command: "uninstall",
@@ -18,7 +19,7 @@ export const uninstallModule: CommandModule = {
     },
 };
 
-async function uninstall(): Promise<void> {
+export async function uninstall(): Promise<void> {
     logger.info("Uninstalling nodecg-io...");
 
     const nodecgDir = await findNodeCGDirectory();

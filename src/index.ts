@@ -1,14 +1,24 @@
 import * as yargs from "yargs";
 import { installModule } from "./install";
 import { uninstallModule } from "./uninstall";
+import { version } from "../package.json";
+import { checkForCliUpdate, ensureNode12 } from "./utils/cli";
+import { generateModule } from "./generate";
 
 // This file gets imported by the index.js file of the repository root.
 
-// TODO: implement update check and log to console if a new version is available.
-
-yargs(process.argv.slice(2))
+const argv = yargs(process.argv.slice(2))
     .scriptName("nodecg-io")
     .usage("$0 <cmd> [args]")
+    .version(version)
     .command(installModule)
     .command(uninstallModule)
+    .command(generateModule)
+    .option("disable-updates", { type: "boolean", description: "Disables check for nodecg-io-cli updates" })
+    .strict()
     .demandCommand().argv;
+
+ensureNode12();
+if (!argv["disable-updates"]) {
+    checkForCliUpdate();
+}

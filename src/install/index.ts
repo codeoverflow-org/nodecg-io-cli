@@ -1,16 +1,15 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
-import { directoryExists, findNodeCGDirectory, getNodeCGIODirectory, removeDirectory } from "../fsUtils";
+import { directoryExists, removeDirectory } from "../utils/fs";
 import { createDevInstall } from "./development";
-import { manageBundleDir } from "../nodecgConfig";
+import { manageBundleDir } from "../utils/nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
-import { readInstallInfo } from "../installation";
+import { readInstallInfo } from "../utils/installation";
 import { createProductionInstall } from "./production";
 import * as os from "os";
-import { logger } from "../log";
-import { requireNpmV7 } from "../npm";
-
-// TODO: remove nodecg-io directory if initial installation was aborted?
+import { logger } from "../utils/log";
+import { requireNpmV7 } from "../utils/npm";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
 
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
@@ -61,12 +60,7 @@ async function install(concurrency: number): Promise<void> {
 
     // Get packages
     if (requestedInstall.dev) {
-        await createDevInstall(
-            requestedInstall,
-            currentInstall && currentInstall.dev ? currentInstall : undefined,
-            nodecgIODir,
-            concurrency,
-        );
+        await createDevInstall(requestedInstall, nodecgIODir, concurrency);
     } else {
         await createProductionInstall(
             requestedInstall,

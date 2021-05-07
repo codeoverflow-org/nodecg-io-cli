@@ -1,6 +1,7 @@
 import * as path from "path";
 import { promises as fs } from "fs";
 import { logger } from "./log";
+import { directoryExists } from "./fs";
 
 /**
  * A configuration of nodecg according to https://www.nodecg.dev/docs/nodecg-configuration/
@@ -24,7 +25,7 @@ function buildConfigPath(nodecgDir: string): string {
  * @param nodecgDir the directory in which the nodecg installation resides.
  * @returns a config if the file exists and is valid. undefined otherwise
  */
-async function readNodeCGConfig(nodecgDir: string): Promise<NodeCGConfig | undefined> {
+export async function readNodeCGConfig(nodecgDir: string): Promise<NodeCGConfig | undefined> {
     try {
         const buf = await fs.readFile(buildConfigPath(nodecgDir));
         const str = buf.toString();
@@ -39,13 +40,10 @@ async function readNodeCGConfig(nodecgDir: string): Promise<NodeCGConfig | undef
  * @param nodecgDir the directory in which the nodecg installation resides.
  * @param config the config that should be written.
  */
-async function writeNodeCGConfig(nodecgDir: string, config: NodeCGConfig): Promise<void> {
+export async function writeNodeCGConfig(nodecgDir: string, config: NodeCGConfig): Promise<void> {
     // Ensure that cfg directory exists
     const cfgPath = path.join(nodecgDir, cfgDir);
-    try {
-        await fs.access(cfgPath);
-    } catch (_e) {
-        // failed to get file => doesn't exist yet.
+    if (!(await directoryExists(cfgPath))) {
         await fs.mkdir(cfgPath);
     }
 
