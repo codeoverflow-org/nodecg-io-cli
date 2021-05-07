@@ -1,10 +1,10 @@
 import { vol } from "memfs";
 import * as path from "path";
-import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../testUtils";
+import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
 import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
-import * as installation from "../../src/installation";
-import * as fsUtils from "../../src/fsUtils";
-import * as npm from "../../src/npm";
+import * as installation from "../../src/utils/installation";
+import * as fsUtils from "../../src/utils/fs";
+import * as npm from "../../src/utils/npm";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(nodecgIODir));
@@ -70,7 +70,7 @@ describe("removePackages", () => {
         const i = { ...validProdInstall, packages: [...packages] };
         await removePackages(packages, i, nodecgIODir);
         expect(writeInstallInfoMock).toHaveBeenCalledTimes(2);
-        expect(writeInstallInfoMock).toHaveBeenLastCalledWith(nodecgIODir, validProdInstall);
+        expect(writeInstallInfoMock).toHaveBeenLastCalledWith(nodecgIODir, { ...validProdInstall, packages: [] });
     });
 });
 
@@ -98,10 +98,10 @@ describe("installPackages", () => {
         expect(packageJson["workspaces"]).toStrictEqual(packages.map((p) => p.path));
     });
 
-    test("should install dependencies", async () => {
+    test("should install prod dependencies", async () => {
         await installPackages(packages, createInstall(), nodecgIODir);
         expect(npmInstallMock).toHaveBeenCalled();
-        expect(npmInstallMock).toHaveBeenCalledWith(nodecgIODir);
+        expect(npmInstallMock).toHaveBeenCalledWith(nodecgIODir, true);
     });
 
     test("should revert changes if npm install fails", async () => {

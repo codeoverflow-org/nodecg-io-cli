@@ -1,6 +1,6 @@
 import { vol } from "memfs";
-import { fsRoot, cfgDir, nodecgCfgPath, nodecgExampleConfig } from "./testUtils";
-import { manageBundleDir, readNodeCGConfig, writeNodeCGConfig } from "../src/nodecgConfig";
+import { fsRoot, cfgDir, nodecgCfgPath, nodecgExampleConfig } from "../test.util";
+import { manageBundleDir, readNodeCGConfig, writeNodeCGConfig } from "../../src/utils/nodecgConfig";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());

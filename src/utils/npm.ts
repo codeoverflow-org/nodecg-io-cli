@@ -1,14 +1,22 @@
-import axios from "axios";
-import * as semver from "semver";
+import axios, { AxiosRequestConfig } from "axios";
 import * as fs from "fs";
 import * as path from "path";
+import { executeCommand, removeDirectory } from "./fs";
+import { exec } from "child_process";
+import { maxSatisfying, satisfies, SemVer } from "semver";
 import gunzip = require("gunzip-maybe");
 import tar = require("tar-fs");
-import { executeCommand, removeDirectory } from "./fsUtils";
-import { exec } from "child_process";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
 const nodeModulesDir = "node_modules";
+
+// Only gets abbreviated metadata as described in https://github.com/npm/registry/blob/master/docs/responses/package-metadata.md
+const axiosNpmMetadataConfig: AxiosRequestConfig = {
+    headers: {
+        // Includes fallback to full json, just in case the npm registry malfunctions or this is removed for some reason
+        Accept: "application/vnd.npm.install-v1+json; q=1.0, application/json; q=0.8, */*",
+    },
+};
 
 /**
  * Information about a npm package that will be fetched by a prod install with name, installed version
@@ -41,15 +49,32 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
  * @param packageName which package you want the versions to.
  * @returns the versions of the package
  */
-export async function getPackageVersions(packageName: string): Promise<string[]> {
-    const response = await axios(npmRegistryEndpoint + packageName);
+export async function getPackageVersions(packageName: string): Promise<SemVer[]> {
+    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
     if (response.data.versions) {
-        return Object.keys(response.data.versions);
+        return Object.keys(response.data.versions).map((versionString) => new SemVer(versionString));
     } else {
         // Version field is missing when e.g. the package has been fully unpublished
         // see https://www.npmjs.com/policies/unpublish for further details.
         throw new Error("package has no published versions.");
     }
+}
+
+/**
+ * Returns the latest published version for the package with the passed name.
+ * @param packageName the package for which you want to get the latest published version.
+ * @return the latest version if the package was found and null if the package was not found on the npm registry.
+ */
+export async function getLatestPackageVersion(packageName: string): Promise<SemVer> {
+    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
+
+    // Gets version through npm tag "latest" so we don't use any pre-release or beta versions
+    const latest = response.data["dist-tags"]["latest"];
+    if (!latest) {
+        throw new Error(`Metadata response for ${packageName} does not contain a latest dist-tag.`);
+    }
+
+    return new SemVer(latest);
 }
 
 /**
@@ -60,10 +85,7 @@ export async function getPackageVersions(packageName: string): Promise<string[]>
  */
 export async function getMinorVersions(packageName: string): Promise<string[]> {
     const allVersions = await getPackageVersions(packageName);
-    const majorMinorVersions = allVersions.map((version) => {
-        const { major, minor } = new semver.SemVer(version);
-        return `${major}.${minor}`;
-    });
+    const majorMinorVersions = allVersions.map((version) => `${version.major}.${version.minor}`);
     return [...new Set(majorMinorVersions)];
 }
 
@@ -74,9 +96,9 @@ export async function getMinorVersions(packageName: string): Promise<string[]> {
  * @param packageName the package you want the highest patch version to
  * @param majorMinor the major.minor version that you want to get the highest patch version of
  */
-export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<string | null> {
+export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<SemVer | null> {
     const allVersions = await getPackageVersions(packageName);
-    return semver.maxSatisfying(allVersions, "~" + majorMinor);
+    return maxSatisfying(allVersions, "~" + majorMinor);
 }
 
 /**
@@ -150,9 +172,20 @@ export async function downloadNpmPackage(pkg: NpmPackage, nodecgIODir: string): 
 /**
  * Installs npm production dependencies in the passed path by running npm install --prod in the directory.
  * @param path the path where a package.json is present
+ * @param onlyProd whether to only install production dependencies or also devDependencies.
  */
-export async function runNpmInstall(path: string): Promise<void> {
-    await executeCommand("npm", ["install", "--prod"], path);
+export async function runNpmInstall(path: string, onlyProd: boolean): Promise<void> {
+    const prodArg = onlyProd ? ["--prod"] : [];
+    await executeCommand("npm", ["install", ...prodArg], path);
+}
+
+/**
+ * Compiles the TypeScript code of a package by running executing the npm script called "build".
+ * @param path the path in which the package is located.
+ * @param args additional arguments that are passed to npm.
+ */
+export async function runNpmBuild(path: string, ...args: string[]): Promise<void> {
+    await executeCommand("npm", ["run", "build", ...args], path);
 }
 
 /**
@@ -205,7 +238,7 @@ export function getSubPackages(allPackages: NpmPackage[], rootPkg: NpmPackage): 
  * Gets version of the installed npm by running "npm --version".
  * @returns the npm version or undefined if npm is not installed/not in $PATH.
  */
-export function getNpmVersion(): Promise<semver.SemVer | undefined> {
+export function getNpmVersion(): Promise<SemVer | undefined> {
     return new Promise((resolve, reject) => {
         const child = exec("npm --version", (err, stdout) => {
             if (err) {
@@ -217,7 +250,7 @@ export function getNpmVersion(): Promise<semver.SemVer | undefined> {
                     reject(err);
                 }
             } else {
-                const ver = new semver.SemVer(stdout);
+                const ver = new SemVer(stdout);
                 resolve(ver);
             }
         });
@@ -226,7 +259,7 @@ export function getNpmVersion(): Promise<semver.SemVer | undefined> {
 
 /**
  * Ensures that there is a npm installation in the current $PATH and it is npm version 7 or higher
- * because thats required for nodecg-io prod (workspaces) and dev (lockfile v2).
+ * because that's required for nodecg-io prod (workspaces) and dev (lockfile v2).
  */
 export async function requireNpmV7(): Promise<void> {
     const version = await getNpmVersion();
@@ -234,7 +267,7 @@ export async function requireNpmV7(): Promise<void> {
         throw new Error("Could not find npm. Make sure npm is installed and in your $PATH.");
     }
 
-    if (!semver.satisfies(version, ">=7")) {
+    if (!satisfies(version, ">=7")) {
         throw new Error(
             `The nodecg-io cli requires a npm version of 7.0.0 or higher. You have ${version.version}.` +
                 '\nUpdate npm by running "npm install -g npm".',

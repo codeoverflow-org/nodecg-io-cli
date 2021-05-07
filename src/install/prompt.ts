@@ -1,8 +1,8 @@
-import { Installation, ProductionInstallation } from "../installation";
+import { Installation, ProductionInstallation } from "../utils/installation";
 import * as inquirer from "inquirer";
-import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../npm";
+import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm";
 import * as semver from "semver";
-import { logger } from "../log";
+import { logger } from "../utils/log";
 import {
     corePackage,
     corePackages,
@@ -11,7 +11,7 @@ import {
     developmentVersion,
     getServicesForVersion,
     supportedNodeCGIORange,
-} from "./nodecgIOVersions";
+} from "../nodecgIOVersions";
 
 interface PromptInput {
     version: string;
@@ -151,7 +151,7 @@ function getPackagePath(pkgName: string) {
 async function getPackageVersion(pkgName: string, minorVersion: string) {
     const version = await getHighestPatchVersion(pkgName, minorVersion);
     // if patch part could be found out we will use .0 as it should always exist if the minor version also does.
-    return version ?? `${minorVersion}.0`;
+    return version?.version ?? `${minorVersion}.0`;
 }
 
 function getPackageSymlinks(pkgName: string) {

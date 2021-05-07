@@ -1,19 +1,49 @@
 import { createFsFromVolume, vol } from "memfs";
-import { createNpmSymlinks, getSubPackages, removeNpmPackage, runNpmInstall } from "../../src/npm";
-import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../testUtils";
-import * as fsUtils from "../../src/fsUtils";
+import {
+    createNpmSymlinks,
+    getSubPackages,
+    removeNpmPackage,
+    runNpmBuild,
+    runNpmInstall,
+} from "../../../src/utils/npm";
+import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../../test.util";
+import * as fsUtils from "../../../src/utils/fs";
 import * as path from "path";
 
 jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
 
+const npmCommand = "npm";
+const execMock = jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
+
+afterEach(() => execMock.mockClear());
+
 describe("runNpmInstall", () => {
-    test("should execute npm install", async () => {
-        const spy = jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
-        await runNpmInstall(fsRoot);
-        expect(spy).toHaveBeenCalled();
-        expect(spy.mock.calls[0][0]).toBe("npm");
-        expect(spy.mock.calls[0][1][0]).toBe("install");
+    test("should execute npm install --prod when installing prod only", async () => {
+        await runNpmInstall(fsRoot, true);
+        expect(execMock).toHaveBeenCalled();
+        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0][1][0]).toBe("install");
+        expect(execMock.mock.calls[0][1][1]).toBe("--prod");
+        expect(execMock.mock.calls[0][2]).toBe(fsRoot);
+    });
+
+    test("should execute npm install when installing prod and dev", async () => {
+        await runNpmInstall(fsRoot, false);
+        expect(execMock).toHaveBeenCalled();
+        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0][1][0]).toBe("install");
+        expect(execMock.mock.calls[0][1].length).toBe(1);
+    });
+});
+
+describe("runNpmBuild", () => {
+    test("should execute install script with passed arguments", async () => {
+        await runNpmBuild(fsRoot, "arg");
+        expect(execMock).toHaveBeenCalled();
+        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0][1][1]).toBe("build");
+        expect(execMock.mock.calls[0][1][2]).toBe("arg"); // Custom arg from above
     });
 });
 

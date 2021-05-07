@@ -1,11 +1,11 @@
-import { createNpmPackageReadStream, downloadNpmPackage } from "../../src/npm";
-import { corePkg, invalidPkgName, tempDir } from "../testUtils";
+import { createNpmPackageReadStream, downloadNpmPackage } from "../../../src/utils/npm";
+import { corePkg, invalidPkgName, tempDir } from "../../test.util";
 import { promises as fs } from "fs";
 import * as path from "path";
 
 describe("createNpmPackageReadStream", () => {
     test("should successfully create read stream for valid package", async () => {
-        expect(createNpmPackageReadStream(corePkg)).resolves.toBeDefined();
+        await expect(createNpmPackageReadStream(corePkg)).resolves.toBeDefined();
     });
 
     test("should error if package name is invalid", async () => {

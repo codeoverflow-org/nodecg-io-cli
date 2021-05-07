@@ -1,7 +1,7 @@
 import * as child_process from "child_process";
 import { ExecException } from "child_process";
-import { getNpmVersion, requireNpmV7 } from "../../src/npm";
-import { oldNpmVersion, validNpmVersion } from "../testUtils";
+import { getNpmVersion, requireNpmV7 } from "../../../src/utils/npm";
+import { oldNpmVersion, validNpmVersion } from "../../test.util";
 
 function createExecMock(versionValue: string | undefined) {
     const execSpy = jest.spyOn(child_process, "exec");
