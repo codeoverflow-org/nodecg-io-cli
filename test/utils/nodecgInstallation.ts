@@ -1,6 +1,6 @@
 import * as path from "path";
 import { createFsFromVolume, vol } from "memfs";
-import { nodecgPackageJsonStr, testDir } from "../testUtils";
+import { nodecgPackageJsonStr, testDir } from "../test.util";
 import { findNodeCGDirectory, getNodeCGVersion } from "../../src/utils/nodecgInstallation";
 import { SemVer } from "semver";
 

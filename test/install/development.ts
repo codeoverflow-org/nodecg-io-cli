@@ -1,7 +1,7 @@
 import { vol } from "memfs";
 import * as git from "isomorphic-git";
 import * as fsUtils from "../../src/utils/fs";
-import { fsRoot, validDevInstall, nodecgIODir } from "../testUtils";
+import { fsRoot, validDevInstall, nodecgIODir } from "../test.util";
 import * as dev from "../../src/install/development";
 import { removeDirectory } from "../../src/utils/fs";
 

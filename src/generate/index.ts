@@ -103,7 +103,9 @@ export async function generateBundle(
 }
 
 async function genGitIgnore(opts: GenerationOptions): Promise<void> {
+    // When typescript we want to ignore compilation results.
     const languageIgnoredFiles = opts.language === "typescript" ? ["/extension/*.js", "/extension/*.js.map"] : [];
+    // Usual editors and node_modules directory
     const ignoreEntries = ["/node_modules/", "/.vscode/", "/.idea/", ...languageIgnoredFiles];
     const content = ignoreEntries.join("\n");
     await writeBundleFile(content, opts.bundlePath, ".gitignore");

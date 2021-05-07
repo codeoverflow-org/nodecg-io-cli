@@ -1,5 +1,5 @@
 import { createNpmPackageReadStream, downloadNpmPackage } from "../../../src/utils/npm";
-import { corePkg, invalidPkgName, tempDir } from "../../testUtils";
+import { corePkg, invalidPkgName, tempDir } from "../../test.util";
 import { promises as fs } from "fs";
 import * as path from "path";
 

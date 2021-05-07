@@ -2,7 +2,7 @@ import { vol } from "memfs";
 import { directoryExists, ensureDirectory, executeCommand, removeDirectory } from "../../src/utils/fs";
 import * as path from "path";
 import * as child_process from "child_process";
-import { testDir } from "../testUtils";
+import { testDir } from "../test.util";
 import { logger } from "../../src/utils/log";
 
 jest.mock("fs", () => vol);

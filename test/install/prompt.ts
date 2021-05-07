@@ -4,7 +4,7 @@ import { getCompatibleVersions, buildPackageList, getServicesFromInstall } from 
 import { logger } from "../../src/utils/log";
 import { corePackages, dashboardPackage, dashboardPath } from "../../src/nodecgIOVersions";
 import { ProductionInstallation } from "../../src/utils/installation";
-import { corePkg, twitchChatPkg } from "../testUtils";
+import { corePkg, twitchChatPkg } from "../test.util";
 import { SemVer } from "semver";
 
 describe("getCompatibleVersions", () => {

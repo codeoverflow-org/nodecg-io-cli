@@ -5,7 +5,7 @@ import {
     getMinorVersions,
     getPackageVersions,
 } from "../../../src/utils/npm";
-import { corePkg, invalidPkgName, twitchChatPkg } from "../../testUtils";
+import { corePkg, invalidPkgName, twitchChatPkg } from "../../test.util";
 import { SemVer } from "semver";
 
 const versions = ["0.1.0", "0.1.1", "0.1.2", "0.2.0"];

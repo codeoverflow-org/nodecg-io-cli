@@ -3,7 +3,7 @@ import { uninstall } from "../../src/uninstall";
 import * as fsUtils from "../../src/utils/fs";
 import * as nodecgInstall from "../../src/utils/nodecgInstallation";
 import * as nodecgConfig from "../../src/utils/nodecgConfig";
-import { fsRoot } from "../testUtils";
+import { fsRoot } from "../test.util";
 import * as path from "path";
 
 jest.mock("fs", () => vol);

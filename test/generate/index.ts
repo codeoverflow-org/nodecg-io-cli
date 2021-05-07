@@ -7,31 +7,18 @@ import {
     twitchChatPkg,
     validDevInstall,
     validProdInstall,
-} from "../testUtils";
+} from "../test.util";
 import { SemVer } from "semver";
 import * as path from "path";
 import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
 import * as npm from "../../src/utils/npm";
 import { ensureValidInstallation, generateBundle } from "../../src/generate";
-import { computeGenOptsFields, GenerationOptions, PromptedGenerationOptions } from "../../src/generate/prompt";
+import { GenerationOptions } from "../../src/generate/prompt";
+import { defaultOpts, jsOpts } from "./opts.util";
 
-const defaultOptsPrompt: PromptedGenerationOptions = {
-    bundleName: "test-bundle",
-    bundleDir: path.join(fsRoot, "bundles"),
-    description: "Hello, this is a description for a test bundle.",
-    version: new SemVer("0.1.0"),
-    services: [twitchChatPkg.path.replace("nodecg-io-", "")],
-    language: "typescript",
-    graphic: false,
-    dashboard: false,
-};
-
-const defaultOpts = computeGenOptsFields(defaultOptsPrompt, validProdInstall);
-const jsOpts: GenerationOptions = { ...defaultOpts, language: "javascript" };
 const nodecgPackageJsonPath = path.join(fsRoot, "package.json");
 const packageJsonPath = path.join(defaultOpts.bundlePath, "package.json");
-const tsConfigPath = path.join(defaultOpts.bundlePath, "tsconfig.json");
 
 jest.spyOn(installation, "readInstallInfo").mockResolvedValue(validProdInstall);
 jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
@@ -93,18 +80,6 @@ describe("generateBundle", () => {
         const buildMock = jest.spyOn(npm, "runNpmBuild").mockClear().mockResolvedValue();
         await generateBundle(fsRoot, jsOpts, validProdInstall);
         expect(buildMock).toHaveBeenCalledTimes(0);
-    });
-});
-
-describe("genTSConfig", () => {
-    test("should generate tsconfig if typescript", async () => {
-        await generateBundle(fsRoot, defaultOpts, validProdInstall);
-        expect(vol.existsSync(tsConfigPath)).toBe(true);
-    });
-
-    test("should not generate tsconfig if javascript", async () => {
-        await generateBundle(fsRoot, jsOpts, validProdInstall);
-        expect(vol.existsSync(tsConfigPath)).toBe(false);
     });
 });
 

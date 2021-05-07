@@ -6,7 +6,7 @@ import {
     runNpmBuild,
     runNpmInstall,
 } from "../../../src/utils/npm";
-import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../../testUtils";
+import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../../test.util";
 import * as fsUtils from "../../../src/utils/fs";
 import * as path from "path";
 

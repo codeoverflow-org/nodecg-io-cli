@@ -1,6 +1,6 @@
 import { vol } from "memfs";
 import * as path from "path";
-import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../testUtils";
+import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
 import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
 import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
