@@ -13,6 +13,7 @@ This is the cli for [nodecg-io](https://github.com/codeoverflow-org/nodecg-io) t
 - [Commands](#commands)
   - [`nodecg-io install`](#nodecg-io-install)
   - [`nodecg-io uninstall`](#nodecg-io-uninstall)
+  - [`nodecg-io generate`](#nodecg-io-generate)
 - [A note about versioning](#a-note-about-versioning)
 - [Developer workflow](#developer-workflow)
 
@@ -37,6 +38,17 @@ If you later decide that you want to add or remove a service you can just re-run
 ### `nodecg-io uninstall`
 
 Undos everything that `nodecg-io install` did. It removes the `nodecg-io` directory with your installation and removes nodecg-io from your nodecg configuration.
+
+### `nodecg-io generate`
+
+Generates a new bundle in the `bundles/` directory in your nodecg installation.
+Allows you to decide on language (typescript or javascript), whether you want a dashboard/graphic and which services you want to use.
+Uses your installed nodecg-io version and services, meaning you need to have the services that you want to use installed.
+
+These generated bundles are only meant as a starting point, you may probably do more things like creating a git repository for your bundle,
+add a license, or add other tools like linters.
+
+Also this command currently only works with installs of released versions and not with development installs. This is because all bundles using nodecg-io depend on `nodecg-io-core` and if you use typescript each used service as well. For development installs these are not published on npm and you would need some way of linking the packages locally.
 
 ## A note about versioning
 
