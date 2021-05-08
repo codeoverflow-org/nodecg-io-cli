@@ -1,6 +1,6 @@
 {
     "name": "nodecg-io-cli",
-    "version": "0.1.0",
+    "version": "0.1.1",
     "description": "The CLI to install and manage nodecg-io installations. Also helps you with nodecg-io bundle related development.",
     "main": "index.js",
     "scripts": {
