@@ -13,7 +13,8 @@
         "format": "prettier --write \"./**/*.{ts,json,md,js}\"",
         "format-pre-commit": "pretty-quick --staged --pattern '*/**/*.{ts,json,md,js}'",
         "prepare": "husky install",
-        "semantic-release": "semantic-release"
+        "semantic-release": "semantic-release",
+        "prepublish": "npm run build"
     },
     "bin": {
         "nodecg-io": "index.js"
