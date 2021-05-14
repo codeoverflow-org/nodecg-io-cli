@@ -97,7 +97,7 @@ function genRequireServiceCall(writer: CodeBlockWriter, svc: ServiceNames, lang:
         writer.write(`<${svc.clientName}>`);
     }
 
-    writer.write(`(nodecg, `).quote(svc.name).write(");");
+    writer.write(`(nodecg, `).quote(svc.name).write(");\n");
 }
 
 function genOnAvailableCall(writer: CodeBlockWriter, svc: ServiceNames) {
