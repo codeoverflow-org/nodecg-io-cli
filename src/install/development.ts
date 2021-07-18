@@ -185,6 +185,6 @@ async function installNPMDependencies(nodecgIODir: string) {
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
     logger.info("Compiling nodecg-io...");
-    await runNpmBuild(nodecgIODir, "--", "concurrency", concurrency.toString());
+    await runNpmBuild(nodecgIODir, "--", "--concurrency", concurrency.toString());
     logger.success("Compiled nodecg-io.");
 }
