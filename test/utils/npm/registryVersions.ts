@@ -29,7 +29,7 @@ const fakeCoreNpmResponse: AxiosResponse<typeof fakeCoreNpmResponseData> = {
     status: 200,
     statusText: "OK",
     data: fakeCoreNpmResponseData,
-    headers: undefined,
+    headers: {},
     config: {},
 };
 
