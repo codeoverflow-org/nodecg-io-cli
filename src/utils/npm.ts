@@ -1,11 +1,11 @@
-import axios, { AxiosRequestConfig } from "axios";
+import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import * as fs from "fs";
 import * as path from "path";
 import { executeCommand, removeDirectory } from "./fs";
 import { exec } from "child_process";
 import { maxSatisfying, satisfies, SemVer } from "semver";
 import gunzip = require("gunzip-maybe");
-import tar = require("tar-fs");
+import * as tar from "tar-fs";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
 const nodeModulesDir = "node_modules";
@@ -50,7 +50,9 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
  * @returns the versions of the package
  */
 export async function getPackageVersions(packageName: string): Promise<SemVer[]> {
-    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
+    const response = (await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig)) as AxiosResponse<{
+        versions?: Record<string, never>;
+    }>;
     if (response.data.versions) {
         return Object.keys(response.data.versions).map((versionString) => new SemVer(versionString));
     } else {
