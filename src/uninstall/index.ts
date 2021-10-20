@@ -31,6 +31,7 @@ export async function uninstall(): Promise<void> {
 
     // Remove bundle dirs from nodecg configuration
     await manageBundleDir(nodecgDir, nodecgIODir, false);
+    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "services"), false);
     await manageBundleDir(nodecgDir, path.join(nodecgIODir, "samples"), false);
 
     // Delete directory
