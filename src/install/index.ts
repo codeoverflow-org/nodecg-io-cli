@@ -71,9 +71,7 @@ async function install(concurrency: number): Promise<void> {
 
     // Add bundle dirs to the nodecg config, so that they are loaded.
     await manageBundleDir(nodecgDir, nodecgIODir, true);
-    if (requestedInstall.version !== "0.1") {
-        await manageBundleDir(nodecgDir, path.join(nodecgIODir, "services"), true);
-    }
+    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "services"), requestedInstall.version !== "0.1");
     await manageBundleDir(
         nodecgDir,
         path.join(nodecgIODir, "samples"),

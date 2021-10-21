@@ -2,7 +2,7 @@ import * as chalk from "chalk";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import * as http from "isomorphic-git/http/node";
-import { directoryExists, executeCommand, removeDirectory } from "../utils/fs";
+import { directoryExists, removeDirectory } from "../utils/fs";
 import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
 import { logger } from "../utils/log";
 import * as path from "path";
@@ -28,7 +28,7 @@ export async function createDevInstall(
         return;
     }
 
-    await installNPMDependencies(nodecgIODir, requested.version);
+    await installNPMDependencies(nodecgIODir);
     await buildTypeScript(nodecgIODir, concurrency);
 
     await writeInstallInfo(nodecgIODir, requested); // save updated install which says that nodecg-io is now installed
@@ -174,19 +174,10 @@ function getGitCommitHash(dir: string): Promise<string> {
     return git.resolveRef({ fs, dir, ref: "HEAD" });
 }
 
-async function installNPMDependencies(nodecgIODir: string, version: string) {
-    if (version !== "0.1") {
-        logger.info("Installing npm dependencies and bootstrapping...");
-
-        await runNpmInstall(nodecgIODir, false);
-        await executeCommand("npm", ["run", "bootstrap"], nodecgIODir);
-
-        logger.info("Installed npm dependencies and bootstrapped.");
-    } else {
-        logger.info("Installing npm dependencies...");
-        await runNpmInstall(nodecgIODir, false);
-        logger.info("Installed npm dependencies.");
-    }
+async function installNPMDependencies(nodecgIODir: string) {
+    logger.info("Installing npm dependencies...");
+    await runNpmInstall(nodecgIODir, false);
+    logger.info("Installed npm dependencies.");
 }
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
