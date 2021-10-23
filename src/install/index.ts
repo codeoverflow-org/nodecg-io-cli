@@ -6,7 +6,6 @@ import { manageBundleDir } from "../utils/nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
 import { readInstallInfo } from "../utils/installation";
 import { createProductionInstall } from "./production";
-import * as os from "os";
 import { logger } from "../utils/log";
 import { requireNpmV7 } from "../utils/npm";
 import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
