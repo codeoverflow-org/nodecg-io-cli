@@ -13,11 +13,7 @@ type CloneRepository = "nodecg-io" | "nodecg-io-docs";
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";
 const nodecgIODocsCloneURL = "https://github.com/codeoverflow-org/nodecg-io-docs.git";
 
-export async function createDevInstall(
-    requested: DevelopmentInstallation,
-    nodecgIODir: string,
-    concurrency: number,
-): Promise<void> {
+export async function createDevInstall(requested: DevelopmentInstallation, nodecgIODir: string): Promise<void> {
     const wasRepoUpdated = await getGitRepo(nodecgIODir, "nodecg-io");
     await manageDocs(nodecgIODir, requested.cloneDocs);
 
@@ -29,7 +25,7 @@ export async function createDevInstall(
     }
 
     await installNPMDependencies(nodecgIODir);
-    await buildTypeScript(nodecgIODir, concurrency);
+    await buildTypeScript(nodecgIODir);
 
     await writeInstallInfo(nodecgIODir, requested); // save updated install which says that nodecg-io is now installed
 }
@@ -180,8 +176,8 @@ async function installNPMDependencies(nodecgIODir: string) {
     logger.info("Installed npm dependencies.");
 }
 
-async function buildTypeScript(nodecgIODir: string, concurrency: number) {
+async function buildTypeScript(nodecgIODir: string) {
     logger.info("Compiling nodecg-io...");
-    await runNpmBuild(nodecgIODir, "--", "--concurrency", concurrency.toString());
+    await runNpmBuild(nodecgIODir);
     logger.success("Compiled nodecg-io.");
 }

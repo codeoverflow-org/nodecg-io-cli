@@ -14,23 +14,9 @@ import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstal
 export const installModule: CommandModule<unknown, { concurrency: number }> = {
     command: "install",
     describe: "installs nodecg-io to your local nodecg installation",
-
-    builder: (yargs) =>
-        yargs
-            .option("concurrency", {
-                alias: "j",
-                type: "number",
-                description: "The maximum count of concurrent running jobs when building a development install",
-                default: os.cpus().length,
-            })
-            .check((argv) => {
-                if (argv.concurrency < 1) throw new Error("Concurrency must be greater than zero.");
-                return true;
-            }),
-
-    handler: async (argv) => {
+    handler: async () => {
         try {
-            await install(argv.concurrency);
+            await install();
         } catch (err) {
             logger.error(`Error while installing nodecg-io: ${err}`);
             process.exit(1);
@@ -38,7 +24,7 @@ export const installModule: CommandModule<unknown, { concurrency: number }> = {
     },
 };
 
-async function install(concurrency: number): Promise<void> {
+async function install(): Promise<void> {
     await requireNpmV7();
 
     logger.info("Installing nodecg-io...");
@@ -60,7 +46,7 @@ async function install(concurrency: number): Promise<void> {
 
     // Get packages
     if (requestedInstall.dev) {
-        await createDevInstall(requestedInstall, nodecgIODir, concurrency);
+        await createDevInstall(requestedInstall, nodecgIODir);
     } else {
         await createProductionInstall(
             requestedInstall,

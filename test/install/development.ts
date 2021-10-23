@@ -36,19 +36,19 @@ afterEach(() => {
 
 describe("createDevInstall", () => {
     test("should not do anything if HEAD commit hash didn't change", async () => {
-        await dev.createDevInstall(validDevInstall, fsRoot, 0);
+        await dev.createDevInstall(validDevInstall, fsRoot);
         expect(execSpy).toHaveBeenCalledTimes(0);
     });
 
     test("should execute install and build", async () => {
         fetchSpy.mockResolvedValueOnce(altFetchResult);
-        await dev.createDevInstall(validDevInstall, fsRoot, 0);
+        await dev.createDevInstall(validDevInstall, fsRoot);
         expect(execSpy).toHaveBeenCalledTimes(2);
     });
 
     test("should not clone docs if not wanted in installation info", async () => {
         // cloneDocs is false in validDevInstall, don't need to change it
-        await dev.createDevInstall(validDevInstall, nodecgIODir, 0);
+        await dev.createDevInstall(validDevInstall, nodecgIODir);
         expect(cloneSpy).toHaveBeenCalledTimes(1);
     });
 
@@ -59,7 +59,6 @@ describe("createDevInstall", () => {
                 cloneDocs: true,
             },
             nodecgIODir,
-            0,
         );
         expect(cloneSpy).toHaveBeenCalledTimes(2);
     });
