@@ -40,10 +40,10 @@ describe("createDevInstall", () => {
         expect(execSpy).toHaveBeenCalledTimes(0);
     });
 
-    test("should execute install, bootstrap and build", async () => {
+    test("should execute install and build", async () => {
         fetchSpy.mockResolvedValueOnce(altFetchResult);
         await dev.createDevInstall(validDevInstall, fsRoot, 0);
-        expect(execSpy).toHaveBeenCalledTimes(3);
+        expect(execSpy).toHaveBeenCalledTimes(2);
     });
 
     test("should not clone docs if not wanted in installation info", async () => {

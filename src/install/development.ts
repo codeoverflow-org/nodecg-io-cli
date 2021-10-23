@@ -2,7 +2,7 @@ import * as chalk from "chalk";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import * as http from "isomorphic-git/http/node";
-import { directoryExists, executeCommand, removeDirectory } from "../utils/fs";
+import { directoryExists, removeDirectory } from "../utils/fs";
 import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
 import { logger } from "../utils/log";
 import * as path from "path";
@@ -175,12 +175,9 @@ function getGitCommitHash(dir: string): Promise<string> {
 }
 
 async function installNPMDependencies(nodecgIODir: string) {
-    logger.info("Installing npm dependencies and bootstrapping...");
-
+    logger.info("Installing npm dependencies...");
     await runNpmInstall(nodecgIODir, false);
-    await executeCommand("npm", ["run", "bootstrap"], nodecgIODir);
-
-    logger.info("Installed npm dependencies and bootstrapped.");
+    logger.info("Installed npm dependencies.");
 }
 
 async function buildTypeScript(nodecgIODir: string, concurrency: number) {
