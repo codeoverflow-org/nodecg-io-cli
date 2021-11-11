@@ -42,7 +42,7 @@ export async function genExtension(opts: GenerationOptions, install: ProductionI
     genImport(writer, "requireService", opts.corePackage.name, opts.language);
 
     if (opts.language === "typescript") {
-        genImport(writer, "NodeCG", "nodecg/types/server", opts.language);
+        genImport(writer, "NodeCG", "nodecg-types/types/server", opts.language);
         // Service import statements
         services.forEach((svc) => {
             genImport(writer, svc.clientName, svc.packageName, opts.language);

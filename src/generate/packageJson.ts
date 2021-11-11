@@ -1,6 +1,5 @@
 import { GenerationOptions } from "./prompt";
 import { logger } from "../utils/log";
-import { getNodeCGVersion } from "../utils/nodecgInstallation";
 import { getLatestPackageVersion } from "../utils/npm";
 import { genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
 import { SemVer } from "semver";
@@ -17,7 +16,7 @@ type Dependency = [string, string];
  * @param nodecgDir the directory in which nodecg is installed
  * @param opts the options that the user chose for the bundle.
  */
-export async function genPackageJson(nodecgDir: string, opts: GenerationOptions): Promise<void> {
+export async function genPackageJson(opts: GenerationOptions): Promise<void> {
     const serviceDeps: Dependency[] = opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]);
 
     const content = {
@@ -32,7 +31,7 @@ export async function genPackageJson(nodecgDir: string, opts: GenerationOptions)
         },
         // These scripts are for compiling TS and thus are only needed when generating a TS bundle
         scripts: genScripts(opts),
-        dependencies: Object.fromEntries(await genDependencies(opts, serviceDeps, nodecgDir)),
+        dependencies: Object.fromEntries(await genDependencies(opts, serviceDeps)),
     };
 
     await writeBundleFile(content, opts.bundlePath, "package.json");
@@ -46,12 +45,12 @@ export async function genPackageJson(nodecgDir: string, opts: GenerationOptions)
  * @param nodecgDir the directory in which nodecg is installed
  * @return the dependencies for a bundle with the given options.
  */
-async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[], nodecgDir: string) {
+async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[]) {
     const core = [opts.corePackage.name, addSemverCaret(opts.corePackage.version)];
 
     if (opts.language === "typescript") {
         // For typescript we need core, all services (for typings) and special packages like ts itself or node typings.
-        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies(nodecgDir))];
+        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies())];
         deps.sort();
         return deps;
     } else {
@@ -65,16 +64,16 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
  * and types for node.
  * @param nodecgDir the directory in which nodecg is installed. Used to get nodecg version which will be used by nodecg dependency.
  */
-async function genTypeScriptDependencies(nodecgDir: string): Promise<Dependency[]> {
-    logger.debug("Fetching latest typescript and @types/node versions...");
+async function genTypeScriptDependencies(): Promise<Dependency[]> {
+    logger.debug("Fetching latest nodecg-types, typescript and @types/node versions...");
     const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
-        getNodeCGVersion(nodecgDir),
+        getLatestPackageVersion("nodecg-types"),
         getLatestPackageVersion("@types/node"),
         getLatestPackageVersion("typescript"),
     ]);
 
     return [
-        ["nodecg", addSemverCaret(nodecgVersion)],
+        ["nodecg-types", addSemverCaret(nodecgVersion)],
         ["@types/node", addSemverCaret(latestNodeTypes)],
         ["typescript", addSemverCaret(latestTypeScript)],
     ];
