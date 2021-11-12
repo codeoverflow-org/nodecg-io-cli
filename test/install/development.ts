@@ -6,7 +6,7 @@ import * as dev from "../../src/install/development";
 import { removeDirectory } from "../../src/utils/fs";
 
 const defaultFetchResult: git.FetchResult = {
-    defaultBranch: "master",
+    defaultBranch: "main",
     fetchHead: "2aae6c35c94fcfb415dbe95f408b9ce91ee846ed",
     fetchHeadDescription: "",
 };

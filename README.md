@@ -29,7 +29,7 @@ Installs nodecg-io to your current NodeCG installation into a subdirectory calle
 
 A production install fetches tarballs of the needed packages from the official npm registry, unpacks them, creates a `package.json` with all packages in a npm v7 workspace configuration and installs dependencies that way.
 
-A development install clones the official git repository (`master`), installs dependencies builds all packages.
+A development install clones the official git repository (`main`), installs dependencies builds all packages.
 
 Either way at the end of the installation it will automatically add the nodecg-io directory (and samples if dev install and selected) to the `bundles.paths` array of your NodeCG configuration. If you don't have a NodeCG configuration it will create one for you.
 
