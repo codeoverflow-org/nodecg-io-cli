@@ -4,7 +4,7 @@ import * as path from "path";
 import { executeCommand, removeDirectory } from "./fs";
 import { exec } from "child_process";
 import { maxSatisfying, satisfies, SemVer } from "semver";
-import gunzip = require("gunzip-maybe");
+import * as zlib from "zlib";
 import * as tar from "tar-fs";
 
 const npmRegistryEndpoint = "https://registry.npmjs.org/";
@@ -144,7 +144,7 @@ export async function extractNpmPackageTar(
     tarStream: fs.ReadStream,
     nodecgIODir: string,
 ): Promise<void> {
-    const extractStream = tarStream.pipe(gunzip(3)).pipe(
+    const extractStream = tarStream.pipe(zlib.createGunzip({ level: 3 })).pipe(
         tar.extract(buildNpmPackagePath(pkg, nodecgIODir), {
             map: (header) => {
                 // Content inside the tar is in /package/*, so we need to rewrite the name to not create a directory
