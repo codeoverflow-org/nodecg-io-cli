@@ -29,7 +29,7 @@ export const generateModule: CommandModule = {
 
             const opts = await promptGenerationOpts(nodecgDir, install);
 
-            await generateBundle(nodecgDir, opts, install);
+            await generateBundle(opts, install);
 
             logger.success(`Successfully generated bundle ${opts.bundleName}.`);
         } catch (e) {
@@ -63,11 +63,7 @@ export function ensureValidInstallation(install: Installation | undefined): inst
     return true;
 }
 
-export async function generateBundle(
-    nodecgDir: string,
-    opts: GenerationOptions,
-    install: ProductionInstallation,
-): Promise<void> {
+export async function generateBundle(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
     // Create dir if necessary
     if (!(await directoryExists(opts.bundlePath))) {
         await fs.promises.mkdir(opts.bundlePath);
@@ -84,7 +80,7 @@ export async function generateBundle(
     }
 
     // All of these calls only generate files if they are set accordingly in the GenerationOptions
-    await genPackageJson(nodecgDir, opts);
+    await genPackageJson(opts);
     await genTsConfig(opts);
     await genGitIgnore(opts);
     await genExtension(opts, install);
