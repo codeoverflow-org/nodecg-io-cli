@@ -1,4 +1,3 @@
-import * as findUp from "find-up";
 import * as path from "path";
 import * as fs from "fs";
 import { SemVer } from "semver";
@@ -7,17 +6,21 @@ import { directoryExists } from "./fs";
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
  */
-export async function findNodeCGDirectory(cwd = process.cwd()): Promise<string> {
-    const res = await findUp(async (dir) => ((await isNodeCGDirectory(dir)) ? dir : undefined), {
-        type: "directory",
-        cwd,
-    });
-    if (res === undefined) {
+export async function findNodeCGDirectory(dir = process.cwd()): Promise<string> {
+    if (await isNodeCGDirectory(dir)) {
+        return dir;
+    }
+
+    const parent = path.dirname(dir);
+
+    // We're at the filesystem root because we cannot go one level up more and didn't found a nodecg installation
+    if (parent === dir) {
         throw new Error(
             "Couldn't find a nodecg installation. Make sure that you are in the directory of your nodecg installation.",
         );
     }
-    return res;
+
+    return findNodeCGDirectory(parent);
 }
 
 /**
