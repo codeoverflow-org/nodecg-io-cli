@@ -6,8 +6,8 @@ import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
 import * as npm from "../../src/utils/npm";
 import { ensureValidInstallation, generateBundle } from "../../src/generate";
-import { GenerationOptions } from "../../src/generate/prompt";
-import { defaultOpts, jsOpts } from "./opts.util";
+import { computeGenOptsFields, GenerationOptions } from "../../src/generate/prompt";
+import { defaultOpts, defaultOptsPrompt, jsOpts } from "./opts.util";
 
 const nodecgPackageJsonPath = path.join(fsRoot, "package.json");
 const packageJsonPath = path.join(defaultOpts.bundlePath, "package.json");
@@ -109,6 +109,16 @@ describe("genPackageJson", () => {
         // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
         expect(e).toEqual(expect.arrayContaining([["typescript", `^1.2.3`]]));
         expect(e).toEqual(expect.arrayContaining([["@types/node", `^1.2.3`]]));
+        expect(e).toEqual(expect.arrayContaining([["nodecg", `^1.2.3`]]));
+    });
+
+    test("should use nodecg-types for 0.2 or higher", async () => {
+        const opts = computeGenOptsFields(defaultOptsPrompt, { ...validProdInstall, version: "0.2" });
+        const deps = (await genPackageJSON(opts))["dependencies"];
+        const e = Object.entries(deps);
+        expect(e).toEqual(expect.arrayContaining([[twitchChatPkg.name, `^${twitchChatPkg.version}`]]));
+
+        // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
         expect(e).toEqual(expect.arrayContaining([["nodecg-types", `^1.2.3`]]));
     });
 

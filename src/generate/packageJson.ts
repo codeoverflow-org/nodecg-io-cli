@@ -50,7 +50,7 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
 
     if (opts.language === "typescript") {
         // For typescript we need core, all services (for typings) and special packages like ts itself or node typings.
-        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies())];
+        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies(opts))];
         deps.sort();
         return deps;
     } else {
@@ -64,16 +64,16 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
  * and types for node.
  * @param nodecgDir the directory in which nodecg is installed. Used to get nodecg version which will be used by nodecg dependency.
  */
-async function genTypeScriptDependencies(): Promise<Dependency[]> {
-    logger.debug("Fetching latest nodecg-types, typescript and @types/node versions...");
+async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Dependency[]> {
+    logger.debug(`Fetching latest ${opts.nodeeCGTypingsPackage}, typescript and @types/node versions...`);
     const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
-        getLatestPackageVersion("nodecg-types"),
+        getLatestPackageVersion(opts.nodeeCGTypingsPackage),
         getLatestPackageVersion("@types/node"),
         getLatestPackageVersion("typescript"),
     ]);
 
     return [
-        ["nodecg-types", addSemverCaret(nodecgVersion)],
+        [opts.nodeeCGTypingsPackage, addSemverCaret(nodecgVersion)],
         ["@types/node", addSemverCaret(latestNodeTypes)],
         ["typescript", addSemverCaret(latestTypeScript)],
     ];
