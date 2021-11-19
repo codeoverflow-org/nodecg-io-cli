@@ -40,7 +40,7 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             message: "Which version do you want to install?",
             choices: [...versions, developmentVersion].reverse(),
             loop: false,
-            default: currentInstall?.version ?? versions.slice(-1)[0],
+            default: currentInstall?.version ?? versions[versions.length - 1],
         },
         // Options for development installs
         {
@@ -131,7 +131,7 @@ export async function buildPackageList(version: string, services: string[]): Pro
         name: pkgName,
         path: getPackagePath(pkgName),
         version: await getPackageVersion(pkgName, version),
-        symlink: getPackageSymlinks(pkgName),
+        symlink: getPackageSymlinks(version, pkgName),
     }));
 
     return await Promise.all(resolvePromises);
@@ -154,9 +154,10 @@ async function getPackageVersion(pkgName: string, minorVersion: string) {
     return version?.version ?? `${minorVersion}.0`;
 }
 
-function getPackageSymlinks(pkgName: string) {
-    // special case: dashboard needs monaco-editor to be symlink into the local node_modules directory.
-    if (pkgName === dashboardPackage) {
+function getPackageSymlinks(version: string, pkgName: string) {
+    // special case: dashboard of version 0.1 needs monaco-editor to be symlink into the local node_modules directory.
+    // with 0.2 and onwards monaco-editor is built with webpack and included in the build output.
+    if (pkgName === dashboardPackage && version === "0.1") {
         return ["monaco-editor"];
     }
 

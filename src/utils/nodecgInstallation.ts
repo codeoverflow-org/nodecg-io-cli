@@ -47,7 +47,12 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
  */
 export async function getNodeCGVersion(nodecgDir: string): Promise<SemVer> {
     const packageJson = await readPackageJson(nodecgDir);
-    return new SemVer(packageJson["version"]);
+    const version = packageJson["version"];
+    if (version === undefined) {
+        throw new Error("Version field is missin in the NodeCG package.json.");
+    }
+
+    return new SemVer(version);
 }
 
 async function readPackageJson(nodecgDir: string): Promise<Record<string, string>> {

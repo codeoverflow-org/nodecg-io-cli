@@ -47,10 +47,27 @@ const version01Services = {
     youtube: "YoutubeServiceClient",
 };
 
-export const supportedNodeCGIORange = new semver.Range("<=0.1");
+const version02Services = {
+    ...version01Services,
+    artnet: "ArtNetServiceClient",
+    atem: "AtemServiceClient",
+    dbus: "DBusClient",
+    debug: "DebugHelper",
+    "discord-rpc": "DiscordRpcClient",
+    "elgato-light": "ElgatoLightClient",
+    googleapis: "GoogleApisServiceClient",
+    github: "GitHubClient",
+    "mqtt-client": "MQTTClientServiceClient",
+    shlink: "ShlinkServiceClient",
+    sql: "SQLClient",
+    youtube: undefined,
+};
 
-export const versionServiceMap: Record<string, Record<string, string>> = {
+export const supportedNodeCGIORange = new semver.Range("<=0.2");
+
+export const versionServiceMap: Record<string, Record<string, string | undefined>> = {
     "0.1": version01Services,
+    "0.2": version02Services,
 };
 
 /**
@@ -65,7 +82,12 @@ export function getServicesForVersion(version: string): string[] {
         throw new Error(`Don't have any service list for version ${version}. Something might be wrong here.`);
     }
 
-    return Object.keys(services);
+    const serviceNames = Object.keys(services)
+        // only services which have a corresponding service class
+        // this is not the case when e.g. the service only existed in a previous version
+        .filter((svcName) => services[svcName] !== undefined);
+    serviceNames.sort();
+    return serviceNames;
 }
 
 /**
@@ -76,6 +98,10 @@ export function getServicesForVersion(version: string): string[] {
  */
 export function getServiceClientName(service: string, version: string): string {
     const svcClientMapping = versionServiceMap[version];
-    const clientName = svcClientMapping[service];
+    const clientName = svcClientMapping?.[service];
+    if (clientName === undefined) {
+        throw new Error(`Access of undefined service client name for ${service}@${version}`);
+    }
+
     return clientName;
 }
