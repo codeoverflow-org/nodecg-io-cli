@@ -74,13 +74,13 @@ describe("executeCommand", () => {
     test("should inherit io streams", async () => {
         const spy = jest.spyOn(child_process, "spawn");
         await executeCommand("exit", ["0"]);
-        expect(spy.mock.calls[0][2].stdio).toBe("inherit");
+        expect(spy.mock.calls[0]?.[2].stdio).toBe("inherit");
     });
 
     test("should log the command that gets executed", async () => {
         const spy = jest.spyOn(logger, "info");
         await executeCommand("exit", ["0"]);
         expect(spy).toHaveBeenCalled();
-        expect(spy.mock.calls[0][0]).toContain("exit 0");
+        expect(spy.mock.calls[0]?.[0]).toContain("exit 0");
     });
 });

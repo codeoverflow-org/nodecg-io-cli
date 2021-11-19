@@ -32,13 +32,14 @@ async function install(): Promise<void> {
     logger.debug(`Detected nodecg installation at ${nodecgDir}.`);
     const nodecgIODir = getNodeCGIODirectory(nodecgDir);
 
-    const currentInstall = await readInstallInfo(nodecgIODir);
+    let currentInstall = await readInstallInfo(nodecgIODir);
     const requestedInstall = await promptForInstallInfo(currentInstall);
 
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
         logger.info(`Deleting nodecg-io version ${currentInstall.version}...`);
         await removeDirectory(nodecgIODir);
+        currentInstall = undefined;
     }
 
     logger.info(`Installing nodecg-io version ${requestedInstall.version}...`);
@@ -56,7 +57,7 @@ async function install(): Promise<void> {
 
     // Add bundle dirs to the nodecg config, so that they are loaded.
     await manageBundleDir(nodecgDir, nodecgIODir, true);
-    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "services"), requestedInstall.version !== "0.1");
+    await manageBundleDir(nodecgDir, path.join(nodecgIODir, "services"), requestedInstall.version === "development");
     await manageBundleDir(
         nodecgDir,
         path.join(nodecgIODir, "samples"),

@@ -41,7 +41,7 @@ describe("getNpmVersion", () => {
         const execSpy = createExecMock(validNpmVersion);
         await getNpmVersion();
         expect(execSpy).toHaveBeenCalled();
-        expect(execSpy.mock.calls[0][0]).toBe("npm --version");
+        expect(execSpy.mock.calls[0]?.[0]).toBe("npm --version");
     });
 
     test("should return undefined if npm is not installed", async () => {

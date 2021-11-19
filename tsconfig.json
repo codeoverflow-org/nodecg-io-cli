@@ -18,6 +18,7 @@
         "noImplicitThis": true,
         "strictNullChecks": true,
         "skipLibCheck": true,
+        "noUncheckedIndexedAccess": true,
 
         "module": "CommonJS",
         "outDir": "build"
