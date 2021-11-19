@@ -28,6 +28,7 @@ export interface PromptedGenerationOptions {
 export interface GenerationOptions extends PromptedGenerationOptions {
     servicePackages: NpmPackage[];
     corePackage: NpmPackage;
+    nodeeCGTypingsPackage: "nodecg" | "nodecg-types";
     bundlePath: string;
 }
 
@@ -169,5 +170,6 @@ export function computeGenOptsFields(
             return svcPackage;
         }),
         bundlePath: path.join(opts.bundleDir, opts.bundleName),
+        nodeeCGTypingsPackage: install.version === "0.1" ? "nodecg" : "nodecg-types",
     };
 }

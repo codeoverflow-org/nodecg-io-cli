@@ -35,13 +35,13 @@ describe("uninstall", () => {
         expect(spyManageBundleDir).toBeCalledTimes(3);
 
         // Should remove nodecg-io directory and sample bundle directory (if applicable)
-        expect(spyManageBundleDir.mock.calls[0][1]).toBe(nodecgIODir);
-        expect(spyManageBundleDir.mock.calls[1][1]).toBe(path.join(nodecgIODir, "services"));
-        expect(spyManageBundleDir.mock.calls[2][1]).toBe(path.join(nodecgIODir, "samples"));
+        expect(spyManageBundleDir.mock.calls[0]?.[1]).toBe(nodecgIODir);
+        expect(spyManageBundleDir.mock.calls[1]?.[1]).toBe(path.join(nodecgIODir, "services"));
+        expect(spyManageBundleDir.mock.calls[2]?.[1]).toBe(path.join(nodecgIODir, "samples"));
         // Should remove them, not add them
-        expect(spyManageBundleDir.mock.calls[0][2]).toBe(false);
-        expect(spyManageBundleDir.mock.calls[1][2]).toBe(false);
-        expect(spyManageBundleDir.mock.calls[2][2]).toBe(false);
+        expect(spyManageBundleDir.mock.calls[0]?.[2]).toBe(false);
+        expect(spyManageBundleDir.mock.calls[1]?.[2]).toBe(false);
+        expect(spyManageBundleDir.mock.calls[2]?.[2]).toBe(false);
     });
 
     test("should remove nodecg-io directory", async () => {
