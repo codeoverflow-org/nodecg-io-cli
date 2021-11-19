@@ -22,18 +22,18 @@ describe("runNpmInstall", () => {
     test("should execute npm install --prod when installing prod only", async () => {
         await runNpmInstall(fsRoot, true);
         expect(execMock).toHaveBeenCalled();
-        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
-        expect(execMock.mock.calls[0][1][0]).toBe("install");
-        expect(execMock.mock.calls[0][1][1]).toBe("--prod");
-        expect(execMock.mock.calls[0][2]).toBe(fsRoot);
+        expect(execMock.mock.calls[0]?.[0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0]?.[1]?.[0]).toBe("install");
+        expect(execMock.mock.calls[0]?.[1]?.[1]).toBe("--prod");
+        expect(execMock.mock.calls[0]?.[2]).toBe(fsRoot);
     });
 
     test("should execute npm install when installing prod and dev", async () => {
         await runNpmInstall(fsRoot, false);
         expect(execMock).toHaveBeenCalled();
-        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
-        expect(execMock.mock.calls[0][1][0]).toBe("install");
-        expect(execMock.mock.calls[0][1].length).toBe(1);
+        expect(execMock.mock.calls[0]?.[0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0]?.[1]?.[0]).toBe("install");
+        expect(execMock.mock.calls[0]?.[1].length).toBe(1);
     });
 });
 
@@ -41,9 +41,9 @@ describe("runNpmBuild", () => {
     test("should execute install script with passed arguments", async () => {
         await runNpmBuild(fsRoot, "arg");
         expect(execMock).toHaveBeenCalled();
-        expect(execMock.mock.calls[0][0]).toBe(npmCommand);
-        expect(execMock.mock.calls[0][1][1]).toBe("build");
-        expect(execMock.mock.calls[0][1][2]).toBe("arg"); // Custom arg from above
+        expect(execMock.mock.calls[0]?.[0]).toBe(npmCommand);
+        expect(execMock.mock.calls[0]?.[1]?.[1]).toBe("build");
+        expect(execMock.mock.calls[0]?.[1]?.[2]).toBe("arg"); // Custom arg from above
     });
 });
 
@@ -61,10 +61,10 @@ describe("createNpmSymlinks", () => {
 
         expect(spy).toHaveBeenCalled();
         // should create it in /nodecg-io-core/node_modules/test-abc (local node_modules)
-        expect(spy.mock.calls[0][1]).toBe(path.join(fsRoot, corePkg.path, "node_modules", "test-abc"));
+        expect(spy.mock.calls[0]?.[1]).toBe(path.join(fsRoot, corePkg.path, "node_modules", "test-abc"));
 
         // should point to /node_modules/test-abc (hoisted package)
-        expect(spy.mock.calls[0][0]).toBe(path.join(fsRoot, "node_modules", "test-abc"));
+        expect(spy.mock.calls[0]?.[0]).toBe(path.join(fsRoot, "node_modules", "test-abc"));
     });
 });
 

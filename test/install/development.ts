@@ -93,7 +93,7 @@ describe("getGitRepo", () => {
     test("should use correct git url for nodecg-io and docs", async () => {
         await dev.getGitRepo(nodecgIODir, "nodecg-io");
         await dev.getGitRepo(nodecgIODir, "nodecg-io-docs");
-        expect(fetchSpy.mock.calls[0][0].url?.endsWith("nodecg-io.git")).toBe(true);
-        expect(fetchSpy.mock.calls[1][0].url?.endsWith("nodecg-io-docs.git")).toBe(true);
+        expect(fetchSpy.mock.calls[0]?.[0].url?.endsWith("nodecg-io.git")).toBe(true);
+        expect(fetchSpy.mock.calls[1]?.[0].url?.endsWith("nodecg-io-docs.git")).toBe(true);
     });
 });

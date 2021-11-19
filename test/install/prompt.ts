@@ -20,8 +20,8 @@ describe("getCompatibleVersions", () => {
         const spy = jest.spyOn(logger, "warn");
         await getCompatibleVersions(compatibleRange);
         expect(spy).toHaveBeenCalled();
-        expect(spy.mock.calls[0][0]).toContain("Cannot install");
-        expect(spy.mock.calls[0][0]).toContain("1.0, 1.1");
+        expect(spy.mock.calls[0]?.[0]).toContain("Cannot install");
+        expect(spy.mock.calls[0]?.[0]).toContain("1.0, 1.1");
     });
 });
 
