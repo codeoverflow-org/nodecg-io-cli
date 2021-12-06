@@ -12,6 +12,7 @@ import {
     getServicesForVersion,
     supportedNodeCGIORange,
 } from "../nodecgIOVersions";
+import { InstallCommandOptions } from ".";
 
 interface PromptInput {
     version: string;
@@ -27,8 +28,26 @@ interface PromptInput {
  * @param currentInstall the current install that will be used for default values
  * @returns the requested installation
  */
-export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
+export async function promptForInstallInfo(
+    currentInstall: Installation | undefined,
+    opts: InstallCommandOptions,
+): Promise<Installation> {
     const versions = await getCompatibleVersions();
+    const optsVersion = opts["nodecg-io-version"];
+    if (optsVersion) {
+        if (optsVersion !== developmentVersion && !versions.includes(optsVersion)) {
+            throw new Error(`The specified nodecg-io "${optsVersion}" version could not be found.`);
+        }
+
+        return await processPromptInput({
+            version: optsVersion,
+            useSamples: opts.samples,
+            cloneDocs: opts.docs,
+            services: opts["all-services"]
+                ? getServicesForVersion(optsVersion)
+                : opts.service?.map((s) => s.toString()),
+        });
+    }
 
     const currentProd = currentInstall !== undefined && !currentInstall.dev ? currentInstall : undefined;
     const currentDev = currentInstall !== undefined && currentInstall.dev ? currentInstall : undefined;
