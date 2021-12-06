@@ -237,6 +237,49 @@ export function getSubPackages(allPackages: NpmPackage[], rootPkg: NpmPackage): 
 }
 
 /**
+ * Recursively finds npm packages using {@link findNpmPackages} in the given directory.
+ */
+export async function findNpmPackages(basePath: string): Promise<NpmPackage[]> {
+    console.log(`Searching for npm packages in ${basePath}`);
+    // If there is a package in this directory, get it
+    const pkg = await getNpmPackageFromPath(basePath);
+
+    // Enumerate sub directories and get any packages in these too
+    const subDirs = await fs.promises.readdir(basePath, { withFileTypes: true });
+    const subPackages = await Promise.all(
+        subDirs
+            .filter((f) => f.isDirectory())
+            .map((f) => f.name)
+            .filter((dir) => dir !== "node_modules") // dependencies, not interesting to us. Also waaaay to big to check, lol
+            .map((subDir) => findNpmPackages(path.join(basePath, subDir))),
+    );
+
+    return [pkg, ...subPackages.flat()].filter((p): p is NpmPackage => p !== undefined);
+}
+
+/**
+ * Gets the npm package that is located in the directory of the passed path.
+ * @param basePath the root directory of the package where the package.json resides in
+ * @returns if a package.json was found and the package is public, the npm package. Otherwise undefined
+ */
+async function getNpmPackageFromPath(basePath: string): Promise<NpmPackage | undefined> {
+    const packageJsonPath = `${basePath}/package.json`;
+    try {
+        const packageJson = await fs.promises.readFile(packageJsonPath, "utf8");
+        const pkg = JSON.parse(packageJson);
+        if (pkg.private) return undefined;
+
+        return {
+            name: pkg.name,
+            version: pkg.version,
+            path: basePath,
+        };
+    } catch (e) {
+        return undefined;
+    }
+}
+
+/**
  * Gets version of the installed npm by running "npm --version".
  * @returns the npm version or undefined if npm is not installed/not in $PATH.
  */
