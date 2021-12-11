@@ -33,10 +33,6 @@ describe("ensureValidInstallation", () => {
         expect(() => ensureValidInstallation(undefined)).toThrow("not installed");
     });
 
-    test("should throw when passing a development installation", () => {
-        expect(() => ensureValidInstallation(validDevInstall)).toThrow("development installation");
-    });
-
     test("should throw when passing install with no services", () => {
         expect(() => ensureValidInstallation({ ...validProdInstall, packages: [corePkg] })).toThrow(
             "at least one service",
@@ -113,7 +109,11 @@ describe("genPackageJson", () => {
     });
 
     test("should use nodecg-types for 0.2 or higher", async () => {
-        const opts = computeGenOptsFields(defaultOptsPrompt, { ...validProdInstall, version: "0.2" });
+        const opts = computeGenOptsFields(
+            defaultOptsPrompt,
+            { ...validProdInstall, version: "0.2" },
+            validProdInstall.packages,
+        );
         const deps = (await genPackageJSON(opts))["dependencies"];
         const e = Object.entries(deps);
         expect(e).toEqual(expect.arrayContaining([[twitchChatPkg.name, `^${twitchChatPkg.version}`]]));

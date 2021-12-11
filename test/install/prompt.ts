@@ -83,7 +83,7 @@ describe("getServicesFromInstall", () => {
             },
         ],
     };
-    const services = getServicesFromInstall(install, "0.1");
+    const services = getServicesFromInstall(install.packages, "0.1");
 
     test("should not return core packages", () => {
         expect(services.includes("core")).toBeFalsy();
