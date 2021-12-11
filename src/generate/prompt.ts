@@ -2,11 +2,12 @@ import * as semver from "semver";
 import * as inquirer from "inquirer";
 import * as path from "path";
 import { directoryExists } from "../utils/fs";
-import { ProductionInstallation } from "../utils/installation";
+import { Installation } from "../utils/installation";
 import { getServicesFromInstall } from "../install/prompt";
 import { yellowInstallCommand } from "./utils";
-import { NpmPackage } from "../utils/npm";
+import { findNpmPackages, NpmPackage } from "../utils/npm";
 import { corePackage } from "../nodecgIOVersions";
+import { getNodeCGIODirectory } from "../utils/nodecgInstallation";
 
 /**
  * Describes all options for bundle generation a user has answered with inside the inquirer prompt
@@ -36,15 +37,14 @@ export type CodeLanguage = "typescript" | "javascript";
 
 const kebabCaseRegex = /^([a-z][a-z0-9]*)(-[a-z0-9]+)*$/;
 
-export async function promptGenerationOpts(
-    nodecgDir: string,
-    install: ProductionInstallation,
-): Promise<GenerationOptions> {
+export async function promptGenerationOpts(nodecgDir: string, install: Installation): Promise<GenerationOptions> {
     const defaultBundleDir = path.join(nodecgDir, "bundles");
     // if we are already in a bundle directory we use the name of the directory as a bundle name and the corresponding bundle dir
     const inBundleDir = path.dirname(process.cwd()) === defaultBundleDir;
     const bundleName = inBundleDir ? path.basename(process.cwd()) : undefined;
     const bundleDir = inBundleDir ? path.dirname(process.cwd()) : defaultBundleDir;
+
+    const installedPackages = install.dev ? await findNpmPackages(getNodeCGIODirectory(nodecgDir)) : install.packages;
 
     const opts: PromptedGenerationOptions = await inquirer.prompt([
         {
@@ -74,13 +74,20 @@ export async function promptGenerationOpts(
             validate: validateVersion,
             filter: (ver) => new semver.SemVer(ver),
         },
-        {
-            type: "checkbox",
-            name: "services",
-            message: `Which services would you like to use? (they must be installed through ${yellowInstallCommand} first)`,
-            choices: getServicesFromInstall(install, install.version),
-            validate: validateServiceSelection,
-        },
+        !install.dev
+            ? {
+                  type: "checkbox",
+                  name: "services",
+                  message: `Which services would you like to use? (they must be installed through ${yellowInstallCommand} first)`,
+                  choices: getServicesFromInstall(installedPackages, install.version),
+                  validate: validateServiceSelection,
+              }
+            : {
+                  type: "input",
+                  name: "services",
+                  message: `Which services would you like to use? (comma separated)`,
+                  filter: (servicesString) => servicesString.split(","),
+              },
         {
             type: "list",
             name: "language",
@@ -99,7 +106,7 @@ export async function promptGenerationOpts(
         },
     ]);
 
-    return computeGenOptsFields(opts, install);
+    return computeGenOptsFields(opts, install, installedPackages);
 }
 
 // region prompt validation
@@ -151,9 +158,10 @@ function validateServiceSelection(services: string[]): true | string {
  */
 export function computeGenOptsFields(
     opts: PromptedGenerationOptions,
-    install: ProductionInstallation,
+    install: Installation,
+    installedPackages: NpmPackage[],
 ): GenerationOptions {
-    const corePkg = install.packages.find((pkg) => pkg.name === corePackage);
+    const corePkg = installedPackages.find((pkg) => pkg.name === corePackage);
     if (corePkg === undefined) {
         throw new Error("Core package in installation info could not be found.");
     }
@@ -162,7 +170,7 @@ export function computeGenOptsFields(
         ...opts,
         corePackage: corePkg,
         servicePackages: opts.services.map((svc) => {
-            const svcPackage = install.packages.find((pkg) => pkg.name.endsWith(svc));
+            const svcPackage = installedPackages.find((pkg) => pkg.name.endsWith(svc));
 
             if (svcPackage === undefined) {
                 throw new Error(`Service ${svc} has no corresponding package in the passed installation.`);

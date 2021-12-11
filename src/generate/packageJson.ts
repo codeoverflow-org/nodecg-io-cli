@@ -4,6 +4,9 @@ import { getLatestPackageVersion } from "../utils/npm";
 import { genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
 import { SemVer } from "semver";
 import { writeBundleFile } from "./utils";
+import { Installation } from "../utils/installation";
+
+const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";
 
 /**
  * A dependency on a npm package. First field is the package name and the second field is the version.
@@ -16,22 +19,22 @@ type Dependency = [string, string];
  * @param nodecgDir the directory in which nodecg is installed
  * @param opts the options that the user chose for the bundle.
  */
-export async function genPackageJson(opts: GenerationOptions): Promise<void> {
-    const serviceDeps: Dependency[] = opts.servicePackages.map((pkg) => [pkg.name, addSemverCaret(pkg.version)]);
+export async function genPackageJson(opts: GenerationOptions, install: Installation): Promise<void> {
+    const serviceDeps = opts.servicePackages.map((pkg) => getNodecgIODependency(pkg.name, pkg.version, install));
 
     const content = {
         name: opts.bundleName,
         version: opts.version.version,
         private: true,
         nodecg: {
-            compatibleRange: addSemverCaret("1.4.0"),
-            bundleDependencies: Object.fromEntries(serviceDeps),
+            compatibleRange: "^1.4.0",
+            bundleDependencies: Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, `^${pkg.version}`])),
             graphics: genNodeCGGraphicConfig(opts),
             dashboardPanels: genNodeCGDashboardConfig(opts),
         },
         // These scripts are for compiling TS and thus are only needed when generating a TS bundle
         scripts: genScripts(opts),
-        dependencies: Object.fromEntries(await genDependencies(opts, serviceDeps)),
+        dependencies: Object.fromEntries(await genDependencies(opts, serviceDeps, install)),
     };
 
     await writeBundleFile(content, opts.bundlePath, "package.json");
@@ -45,8 +48,8 @@ export async function genPackageJson(opts: GenerationOptions): Promise<void> {
  * @param nodecgDir the directory in which nodecg is installed
  * @return the dependencies for a bundle with the given options.
  */
-async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[]) {
-    const core = [opts.corePackage.name, addSemverCaret(opts.corePackage.version)];
+async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[], install: Installation) {
+    const core = getNodecgIODependency(opts.corePackage.name, opts.corePackage.version, install);
 
     if (opts.language === "typescript") {
         // For typescript we need core, all services (for typings) and special packages like ts itself or node typings.
@@ -73,9 +76,9 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
     ]);
 
     return [
-        [opts.nodeeCGTypingsPackage, addSemverCaret(nodecgVersion)],
-        ["@types/node", addSemverCaret(latestNodeTypes)],
-        ["typescript", addSemverCaret(latestTypeScript)],
+        [opts.nodeeCGTypingsPackage, `^${nodecgVersion}`],
+        ["@types/node", `^${latestNodeTypes}`],
+        ["typescript", `^${latestTypeScript}`],
     ];
 }
 
@@ -86,6 +89,7 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
  */
 function genScripts(opts: GenerationOptions) {
     if (opts.language !== "typescript") {
+        // For JS we don't need any sciprts to build anythiing.
         return undefined;
     }
 
@@ -97,12 +101,10 @@ function genScripts(opts: GenerationOptions) {
     };
 }
 
-/**
- * Adds the semver caret operator to a given version to allow or minor and patch updates by npm.
- *
- * @param version the base version
- * @return the version with the semver caret operator in front.
- */
-function addSemverCaret(version: string | SemVer): string {
-    return `^${version}`;
+function getNodecgIODependency(packageName: string, version: string | SemVer, install: Installation): Dependency {
+    if (install.dev) {
+        return [packageName, `${developmentPublishRootUrl}${packageName}-${version}.tgz`];
+    } else {
+        return [packageName, `^${version}`];
+    }
 }

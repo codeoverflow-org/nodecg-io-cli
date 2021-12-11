@@ -1,4 +1,4 @@
-import { Installation, ProductionInstallation } from "../utils/installation";
+import { Installation } from "../utils/installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm";
 import * as semver from "semver";
@@ -66,7 +66,7 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             when: (x: PromptInput) => x.version !== developmentVersion,
             default: (x: PromptInput) => {
                 if (!currentProd) return;
-                return getServicesFromInstall(currentProd, x.version);
+                return getServicesFromInstall(currentProd.packages, x.version);
             },
         },
     ]);
@@ -171,10 +171,10 @@ function getPackageSymlinks(version: string, pkgName: string) {
  * @param targetVersion the version of nodecg-io that is installed
  * @returns the list of installed services (package names without the nodecg-io- prefix)
  */
-export function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
+export function getServicesFromInstall(installedPackages: NpmPackage[], targetVersion: string): string[] {
     const availableServices = getServicesForVersion(targetVersion);
 
-    const svcPackages = install.packages
+    const svcPackages = installedPackages
         // Exclude core packages, they are not a optional service, they are always required
         .filter((pkg) => !corePackages.find((corePkg) => pkg.name === corePkg))
         .map((pkg) => pkg.name.replace("nodecg-io-", ""))

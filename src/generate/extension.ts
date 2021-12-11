@@ -1,6 +1,6 @@
 import CodeBlockWriter from "code-block-writer";
 import { getServiceClientName } from "../nodecgIOVersions";
-import { ProductionInstallation } from "../utils/installation";
+import { Installation } from "../utils/installation";
 import { CodeLanguage, GenerationOptions } from "./prompt";
 import { writeBundleFile } from "./utils";
 
@@ -33,9 +33,9 @@ function getServiceNames(serviceBaseName: string, nodecgIOVersion: string): Serv
     };
 }
 
-export async function genExtension(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
+export async function genExtension(opts: GenerationOptions, install: Installation): Promise<void> {
     // Generate further information for each service which is needed to generate the bundle extension.
-    const services = opts.services.map((svc) => getServiceNames(svc, install.version));
+    const services = install.dev === false ? opts.services.map((svc) => getServiceNames(svc, install.version)) : [];
 
     const writer = new CodeBlockWriter();
 

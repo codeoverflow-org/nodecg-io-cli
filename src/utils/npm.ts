@@ -240,7 +240,6 @@ export function getSubPackages(allPackages: NpmPackage[], rootPkg: NpmPackage): 
  * Recursively finds npm packages using {@link findNpmPackages} in the given directory.
  */
 export async function findNpmPackages(basePath: string): Promise<NpmPackage[]> {
-    console.log(`Searching for npm packages in ${basePath}`);
     // If there is a package in this directory, get it
     const pkg = await getNpmPackageFromPath(basePath);
 
