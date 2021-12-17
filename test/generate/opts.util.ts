@@ -14,5 +14,5 @@ export const defaultOptsPrompt: PromptedGenerationOptions = {
     dashboard: false,
 };
 
-export const defaultOpts = computeGenOptsFields(defaultOptsPrompt, validProdInstall);
+export const defaultOpts = computeGenOptsFields(defaultOptsPrompt, validProdInstall, validProdInstall.packages);
 export const jsOpts: GenerationOptions = { ...defaultOpts, language: "javascript" };

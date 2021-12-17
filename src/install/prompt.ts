@@ -1,4 +1,4 @@
-import { Installation, ProductionInstallation } from "../utils/installation";
+import { Installation } from "../utils/installation";
 import * as inquirer from "inquirer";
 import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm";
 import * as semver from "semver";
@@ -12,6 +12,7 @@ import {
     getServicesForVersion,
     supportedNodeCGIORange,
 } from "../nodecgIOVersions";
+import { InstallCommandOptions } from ".";
 
 interface PromptInput {
     version: string;
@@ -27,8 +28,26 @@ interface PromptInput {
  * @param currentInstall the current install that will be used for default values
  * @returns the requested installation
  */
-export async function promptForInstallInfo(currentInstall: Installation | undefined): Promise<Installation> {
+export async function promptForInstallInfo(
+    currentInstall: Installation | undefined,
+    opts: InstallCommandOptions,
+): Promise<Installation> {
     const versions = await getCompatibleVersions();
+    const optsVersion = opts["nodecg-io-version"];
+    if (optsVersion) {
+        if (optsVersion !== developmentVersion && !versions.includes(optsVersion)) {
+            throw new Error(`The specified nodecg-io "${optsVersion}" version could not be found.`);
+        }
+
+        return await processPromptInput({
+            version: optsVersion,
+            useSamples: opts.samples,
+            cloneDocs: opts.docs,
+            services: opts["all-services"]
+                ? getServicesForVersion(optsVersion)
+                : opts.service?.map((s) => s.toString()),
+        });
+    }
 
     const currentProd = currentInstall !== undefined && !currentInstall.dev ? currentInstall : undefined;
     const currentDev = currentInstall !== undefined && currentInstall.dev ? currentInstall : undefined;
@@ -66,7 +85,7 @@ export async function promptForInstallInfo(currentInstall: Installation | undefi
             when: (x: PromptInput) => x.version !== developmentVersion,
             default: (x: PromptInput) => {
                 if (!currentProd) return;
-                return getServicesFromInstall(currentProd, x.version);
+                return getServicesFromInstall(currentProd.packages, x.version);
             },
         },
     ]);
@@ -166,15 +185,15 @@ function getPackageSymlinks(version: string, pkgName: string) {
 }
 
 /**
- * Returns the list of installed services of a production installation.
- * @param install the installation info for which you want the list of installed services.
+ * Returns the list of installed services of a nodecg-io installation.
+ * @param installedPackages a array with all packages that are installed
  * @param targetVersion the version of nodecg-io that is installed
  * @returns the list of installed services (package names without the nodecg-io- prefix)
  */
-export function getServicesFromInstall(install: ProductionInstallation, targetVersion: string): string[] {
+export function getServicesFromInstall(installedPackages: NpmPackage[], targetVersion: string): string[] {
     const availableServices = getServicesForVersion(targetVersion);
 
-    const svcPackages = install.packages
+    const svcPackages = installedPackages
         // Exclude core packages, they are not a optional service, they are always required
         .filter((pkg) => !corePackages.find((corePkg) => pkg.name === corePkg))
         .map((pkg) => pkg.name.replace("nodecg-io-", ""))

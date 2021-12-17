@@ -16,11 +16,15 @@ const args = yargs(process.argv.slice(2))
     .command(generateModule)
     .option("disable-updates", { type: "boolean", description: "Disables check for nodecg-io-cli updates" })
     .strict()
-    .demandCommand();
+    .demandCommand()
+    .parserConfiguration({
+        "dot-notation": false,
+    })
+    .parse();
 
 ensureNode12();
 (async () => {
-    const opts = await args.argv;
+    const opts = await args;
     if (!opts["disable-updates"]) {
         checkForCliUpdate();
     }

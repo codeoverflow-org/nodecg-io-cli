@@ -6,7 +6,6 @@ import * as chalk from "chalk";
 
 // Colored commands for logging purposes.
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
-export const yellowGenerateCommand = chalk.yellow("nodecg-io generate");
 
 /**
  * Writes a file for a bundle.
