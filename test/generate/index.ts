@@ -8,6 +8,8 @@ import * as npm from "../../src/utils/npm";
 import { ensureValidInstallation, generateBundle } from "../../src/generate";
 import { computeGenOptsFields, GenerationOptions } from "../../src/generate/prompt";
 import { defaultOpts, defaultOptsPrompt, jsOpts } from "./opts.util";
+import { developmentPublishRootUrl } from "../../src/generate/packageJson";
+import { Installation } from "../../src/utils/installation";
 
 const nodecgPackageJsonPath = path.join(fsRoot, "package.json");
 const packageJsonPath = path.join(defaultOpts.bundlePath, "package.json");
@@ -74,8 +76,11 @@ describe("generateBundle", () => {
 describe("genPackageJson", () => {
     // We don't have a good type for a package.json and this is only testing code so this should be fine.
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    async function genPackageJSON(opts: GenerationOptions = defaultOpts): Promise<any> {
-        await generateBundle(opts, validProdInstall);
+    async function genPackageJSON(
+        opts: GenerationOptions = defaultOpts,
+        install: Installation = validProdInstall,
+    ): Promise<any> {
+        await generateBundle(opts, install);
         const packageJsonStr = await vol.promises.readFile(packageJsonPath);
         if (!packageJsonStr) throw new Error("package.json does not exist");
         return JSON.parse(packageJsonStr.toString());
@@ -106,6 +111,12 @@ describe("genPackageJson", () => {
         expect(e).toEqual(expect.arrayContaining([["typescript", `^1.2.3`]]));
         expect(e).toEqual(expect.arrayContaining([["@types/node", `^1.2.3`]]));
         expect(e).toEqual(expect.arrayContaining([["nodecg", `^1.2.3`]]));
+    });
+
+    test("should get dependencies using tarballs if a development install is used", async () => {
+        const deps = (await genPackageJSON(defaultOpts, validDevInstall))["dependencies"];
+
+        expect(deps["nodecg-io-core"]).toContain(developmentPublishRootUrl);
     });
 
     test("should use nodecg-types for 0.2 or higher", async () => {

@@ -7,7 +7,7 @@ import { writeBundleFile } from "./utils";
 import { Installation } from "../utils/installation";
 
 // Loaction where the development tarballs are hosted.
-const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";
+export const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";
 
 /**
  * A dependency on a npm package. First field is the package name and the second field is the version.
