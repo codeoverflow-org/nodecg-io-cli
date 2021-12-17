@@ -6,6 +6,7 @@ import { SemVer } from "semver";
 import { writeBundleFile } from "./utils";
 import { Installation } from "../utils/installation";
 
+// Loaction where the development tarballs are hosted.
 const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";
 
 /**
@@ -16,8 +17,8 @@ type Dependency = [string, string];
 /**
  * Generates the whole package.json file for the bundle.
  *
- * @param nodecgDir the directory in which nodecg is installed
  * @param opts the options that the user chose for the bundle.
+ * @param install the nodecg-io installation that will used to get the versions of the various packages.
  */
 export async function genPackageJson(opts: GenerationOptions, install: Installation): Promise<void> {
     const serviceDeps = opts.servicePackages.map((pkg) => getNodecgIODependency(pkg.name, pkg.version, install));
@@ -89,7 +90,7 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
  */
 function genScripts(opts: GenerationOptions) {
     if (opts.language !== "typescript") {
-        // For JS we don't need any sciprts to build anythiing.
+        // For JS we don't need any scripts to build anythiing.
         return undefined;
     }
 
@@ -101,6 +102,11 @@ function genScripts(opts: GenerationOptions) {
     };
 }
 
+/**
+ * Builds the npm dependency for the package with the passed name and version.
+ * If this is a production install it will be from the npm registry and
+ * if it is a development install it will be from a tarball of the nodecg-io-publish repository.
+ */
 function getNodecgIODependency(packageName: string, version: string | SemVer, install: Installation): Dependency {
     if (install.dev) {
         return [packageName, `${developmentPublishRootUrl}${packageName}-${version}.tgz`];

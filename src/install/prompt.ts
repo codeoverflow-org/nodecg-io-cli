@@ -166,8 +166,8 @@ function getPackageSymlinks(version: string, pkgName: string) {
 }
 
 /**
- * Returns the list of installed services of a production installation.
- * @param install the installation info for which you want the list of installed services.
+ * Returns the list of installed services of a nodecg-io installation.
+ * @param installedPackages a array with all packages that are installed
  * @param targetVersion the version of nodecg-io that is installed
  * @returns the list of installed services (package names without the nodecg-io- prefix)
  */

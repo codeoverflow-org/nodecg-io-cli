@@ -34,11 +34,14 @@ function getServiceNames(serviceBaseName: string, nodecgIOVersion: string): Serv
 }
 
 export async function genExtension(opts: GenerationOptions, install: Installation): Promise<void> {
-    // Generate further information for each service which is needed to generate the bundle extension.
+    // Generate all variants of the service names if were doing it from a production install.
+    // We can't generate the imports and stuff if we currently have a development install because
+    // the service names for each version are hardcoded and unknown for a development version.
     const services = install.dev === false ? opts.services.map((svc) => getServiceNames(svc, install.version)) : [];
 
     const writer = new CodeBlockWriter();
 
+    // imports
     genImport(writer, "requireService", opts.corePackage.name, opts.language);
 
     if (opts.language === "typescript") {

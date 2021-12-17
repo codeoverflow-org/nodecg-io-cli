@@ -2,7 +2,7 @@ import { CommandModule } from "yargs";
 import * as fs from "fs";
 import { logger } from "../utils/log";
 import { directoryExists } from "../utils/fs";
-import { Installation, ProductionInstallation, readInstallInfo } from "../utils/installation";
+import { Installation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import { runNpmBuild, runNpmInstall } from "../utils/npm";
@@ -10,7 +10,7 @@ import { genExtension } from "./extension";
 import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
 import { genDashboard, genGraphic } from "./panel";
 import { genTsConfig } from "./tsConfig";
-import { writeBundleFile, yellowGenerateCommand, yellowInstallCommand } from "./utils";
+import { writeBundleFile, yellowInstallCommand } from "./utils";
 import { genPackageJson } from "./packageJson";
 
 export const generateModule: CommandModule = {
@@ -40,8 +40,8 @@ export const generateModule: CommandModule = {
 };
 
 /**
- * Ensures that a installation can be used to generate bundles, meaning nodecg-io is actually installed,
- * is not a dev install and has some services installed that can be used.
+ * Ensures that a installation can be used to generate bundles, meaning nodecg-io is actually installed
+ * including at least one service that can be used for generating a bundle.
  * Throws an error if the installation cannot be used to generate a bundle with an explanation.
  */
 export function ensureValidInstallation(install: Installation | undefined): install is Installation {
