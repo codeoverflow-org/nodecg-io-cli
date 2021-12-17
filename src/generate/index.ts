@@ -2,7 +2,7 @@ import { CommandModule } from "yargs";
 import * as fs from "fs";
 import { logger } from "../utils/log";
 import { directoryExists } from "../utils/fs";
-import { Installation, ProductionInstallation, readInstallInfo } from "../utils/installation";
+import { Installation, readInstallInfo } from "../utils/installation";
 import { corePackages } from "../nodecgIOVersions";
 import { GenerationOptions, promptGenerationOpts } from "./prompt";
 import { runNpmBuild, runNpmInstall } from "../utils/npm";
@@ -10,7 +10,7 @@ import { genExtension } from "./extension";
 import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
 import { genDashboard, genGraphic } from "./panel";
 import { genTsConfig } from "./tsConfig";
-import { writeBundleFile, yellowGenerateCommand, yellowInstallCommand } from "./utils";
+import { writeBundleFile, yellowInstallCommand } from "./utils";
 import { genPackageJson } from "./packageJson";
 
 export const generateModule: CommandModule = {
@@ -40,19 +40,17 @@ export const generateModule: CommandModule = {
 };
 
 /**
- * Ensures that a installation can be used to generate bundles, meaning nodecg-io is actually installed,
- * is not a dev install and has some services installed that can be used.
+ * Ensures that a installation can be used to generate bundles, meaning nodecg-io is actually installed
+ * including at least one service that can be used for generating a bundle.
  * Throws an error if the installation cannot be used to generate a bundle with an explanation.
  */
-export function ensureValidInstallation(install: Installation | undefined): install is ProductionInstallation {
+export function ensureValidInstallation(install: Installation | undefined): install is Installation {
     if (install === undefined) {
         throw new Error(
             "nodecg-io is not installed to your local nodecg install.\n" +
                 `Please install it first using this command: ${yellowInstallCommand}`,
         );
-    } else if (install.dev) {
-        throw new Error(`You cannot use ${yellowGenerateCommand} together with a development installation.`);
-    } else if (install.packages.length <= corePackages.length) {
+    } else if (install.dev === false && install.packages.length <= corePackages.length) {
         // just has core packages without any services installed.
         throw new Error(
             `You first need to have at least one service installed to generate a bundle.\n` +
@@ -63,7 +61,7 @@ export function ensureValidInstallation(install: Installation | undefined): inst
     return true;
 }
 
-export async function generateBundle(opts: GenerationOptions, install: ProductionInstallation): Promise<void> {
+export async function generateBundle(opts: GenerationOptions, install: Installation): Promise<void> {
     // Create dir if necessary
     if (!(await directoryExists(opts.bundlePath))) {
         await fs.promises.mkdir(opts.bundlePath);
@@ -80,7 +78,7 @@ export async function generateBundle(opts: GenerationOptions, install: Productio
     }
 
     // All of these calls only generate files if they are set accordingly in the GenerationOptions
-    await genPackageJson(opts);
+    await genPackageJson(opts, install);
     await genTsConfig(opts);
     await genGitIgnore(opts);
     await genExtension(opts, install);

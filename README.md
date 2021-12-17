@@ -48,7 +48,8 @@ Uses your installed nodecg-io version and services, meaning you need to have the
 These generated bundles are only meant as a starting point, you may probably do more things like creating a git repository for your bundle,
 add a licence, or add other tools like linters.
 
-Also, this command currently only works with installs of released versions and not with development installs. This is because all bundles using nodecg-io depend on `nodecg-io-core` and if you use typescript each used service as well. For development installs these are not published on npm, and you would need some way of linking the packages locally.
+If you are using a released version of nodecg-io (aka. a production install) the nodecg-io packages get fetched directly from npm.
+If you are using a development version of nodecg-io these get fetched as tarballs from the [nodecg-io-publish repository](https://github.com/codeoverflow-org/nodecg-io-publish).
 
 ## A note about versioning
 
@@ -59,9 +60,7 @@ The following table show which versions of the CLI are compatible with which nod
 | CLI versions | nodecg-io versions |
 | ------------ | ------------------ |
 | `0.1`        | `0.1`              |
-| `0.2`        | `0.2`, `0.1`       |
-
-Currently, they are the same, but we will follow [semver2](https://semver.org/) using [semantic-release](https://semantic-release.gitbook.io/semantic-release/) and the versions will diverge at some point.
+| `0.3`, `0.2` | `0.2`, `0.1`       |
 
 ## Developer workflow
 
