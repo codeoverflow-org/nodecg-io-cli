@@ -70,10 +70,10 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
  */
 async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Dependency[]> {
     logger.debug(
-        `Fetching latest ${opts.nodeeCGTypingsPackage}, nodecg-io-tsconfig, typescript and @types/node versions...`,
+        `Fetching latest ${opts.nodeCGTypingsPackage}, nodecg-io-tsconfig, typescript and @types/node versions...`,
     );
     const [nodecgVersion, latestTsConfig, latestTypeScript, latestNodeTypes] = await Promise.all([
-        getLatestPackageVersion(opts.nodeeCGTypingsPackage),
+        getLatestPackageVersion(opts.nodeCGTypingsPackage),
         getLatestPackageVersion("nodecg-io-tsconfig"),
         getLatestPackageVersion("typescript"),
         getLatestPackageVersion("@types/node"),
@@ -81,7 +81,7 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
 
     return [
         ["@types/node", `^${latestNodeTypes}`],
-        [opts.nodeeCGTypingsPackage, `^${nodecgVersion}`],
+        [opts.nodeCGTypingsPackage, `^${nodecgVersion}`],
         ["nodecg-io-tsconfig", `^${latestTsConfig}`],
         ["typescript", `^${latestTypeScript}`],
     ];
