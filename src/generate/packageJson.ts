@@ -69,16 +69,20 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
  * @param nodecgDir the directory in which nodecg is installed. Used to get nodecg version which will be used by nodecg dependency.
  */
 async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Dependency[]> {
-    logger.debug(`Fetching latest ${opts.nodeeCGTypingsPackage}, typescript and @types/node versions...`);
-    const [nodecgVersion, latestNodeTypes, latestTypeScript] = await Promise.all([
+    logger.debug(
+        `Fetching latest ${opts.nodeeCGTypingsPackage}, nodecg-io-tsconfig, typescript and @types/node versions...`,
+    );
+    const [nodecgVersion, latestTsConfig, latestTypeScript, latestNodeTypes] = await Promise.all([
         getLatestPackageVersion(opts.nodeeCGTypingsPackage),
-        getLatestPackageVersion("@types/node"),
+        getLatestPackageVersion("nodecg-io-tsconfig"),
         getLatestPackageVersion("typescript"),
+        getLatestPackageVersion("@types/node"),
     ]);
 
     return [
-        [opts.nodeeCGTypingsPackage, `^${nodecgVersion}`],
         ["@types/node", `^${latestNodeTypes}`],
+        [opts.nodeeCGTypingsPackage, `^${nodecgVersion}`],
+        ["nodecg-io-tsconfig", `^${latestTsConfig}`],
         ["typescript", `^${latestTypeScript}`],
     ];
 }
@@ -90,7 +94,7 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
  */
 function genScripts(opts: GenerationOptions) {
     if (opts.language !== "typescript") {
-        // For JS we don't need any scripts to build anythiing.
+        // For JS we don't need any scripts to build anything.
         return undefined;
     }
 
