@@ -23,3 +23,38 @@ jobs:
 
     - name: Run tests
       run: npm run test
+
+  integration_test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+        version: ['0.1', '0.2', 'development']
+        node: [14, 16]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+    - uses: actions/checkout@v2
+    - uses: actions/setup-node@v2
+      with: 
+        node-version: ${{ matrix.node }}
+
+    - name: Install system dependencies
+      if: matrix.os == 'ubuntu-latest'
+      run: sudo apt update && sudo apt-get -y install libusb-1.0-0-dev libasound2-dev libudev-dev
+
+    - name: Upgrade npm
+      run: npm i -g npm
+
+    - name: Install node native development files
+      shell: bash
+      run: npx node-gyp install
+
+    - name: Install nodejs dependencies
+      run: npm ci
+
+    - name: Build
+      run: npm run build && npm link
+
+    - name: Run integration test
+      shell: bash
+      run: ./integration_test.sh ${{ matrix.version }}
