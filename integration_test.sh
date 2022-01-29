@@ -27,7 +27,14 @@ git clone https://github.com/nodecg/nodecg.git --depth 1 .
 if [ "$version" == "development" ]; then
     nodecg-io install --nodecg-io-version $version --docs
 else
+    # Install nodecg-io
     nodecg-io install --nodecg-io-version $version --all-services
+
+    # Generate a bundle that uses all available services
+    input="test\\n\n\\n\\na\\n\\n\\n\\n"
+    # We add a sleep of 500ms between each line so that stdin pauses and inquirer 
+    # thinks the user is done, reads and processes the input instead of assuming multi-line input.
+    echo -en "$input" | while read -r line; do echo "$line"; sleep 1; done | nodecg-io generate
 fi
 
 nodecg-io uninstall
