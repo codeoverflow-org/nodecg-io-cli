@@ -19,12 +19,12 @@ const execMock = jest.spyOn(fsUtils, "executeCommand").mockResolvedValue();
 afterEach(() => execMock.mockClear());
 
 describe("runNpmInstall", () => {
-    test("should execute npm install --prod when installing prod only", async () => {
+    test("should execute npm install --omit=dev when installing only production dependencies", async () => {
         await runNpmInstall(fsRoot, true);
         expect(execMock).toHaveBeenCalled();
         expect(execMock.mock.calls[0]?.[0]).toBe(npmCommand);
         expect(execMock.mock.calls[0]?.[1]?.[0]).toBe("install");
-        expect(execMock.mock.calls[0]?.[1]?.[1]).toBe("--prod");
+        expect(execMock.mock.calls[0]?.[1]?.[1]).toBe("--omit=dev");
         expect(execMock.mock.calls[0]?.[2]).toBe(fsRoot);
     });
 

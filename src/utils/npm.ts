@@ -172,12 +172,12 @@ export async function downloadNpmPackage(pkg: NpmPackage, nodecgIODir: string): 
 }
 
 /**
- * Installs npm production dependencies in the passed path by running npm install --prod in the directory.
+ * Installs npm production dependencies in the passed path by running npm install --omit=dev in the directory.
  * @param path the path where a package.json is present
  * @param onlyProd whether to only install production dependencies or also devDependencies.
  */
 export async function runNpmInstall(path: string, onlyProd: boolean): Promise<void> {
-    const prodArg = onlyProd ? ["--prod"] : [];
+    const prodArg = onlyProd ? ["--omit=dev"] : [];
     await executeCommand("npm", ["install", ...prodArg], path);
 }
 
