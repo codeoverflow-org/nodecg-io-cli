@@ -1,6 +1,7 @@
-import path = require("path");
+import * as path from "path";
+import * as fs from "fs";
 import { CommandModule } from "yargs";
-import { directoryExists, removeDirectory } from "../utils/fs";
+import { directoryExists } from "../utils/fs";
 import { logger } from "../utils/log";
 import { manageBundleDir } from "../utils/nodecgConfig";
 import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
@@ -36,7 +37,7 @@ export async function uninstall(): Promise<void> {
 
     // Delete directory
     logger.debug(`Uninstalling nodecg-io from nodecg installation at ${nodecgDir}...`);
-    await removeDirectory(nodecgIODir);
+    await fs.promises.rm(nodecgIODir, { recursive: true, force: true });
 
     logger.success("Successfully uninstalled nodecg-io.");
 }

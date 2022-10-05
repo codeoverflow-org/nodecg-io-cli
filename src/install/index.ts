@@ -1,6 +1,7 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
-import { directoryExists, removeDirectory } from "../utils/fs";
+import * as fs from "fs";
+import { directoryExists } from "../utils/fs";
 import { createDevInstall } from "./development";
 import { manageBundleDir } from "../utils/nodecgConfig";
 import { promptForInstallInfo } from "./prompt";
@@ -76,7 +77,7 @@ async function install(opts: InstallCommandOptions): Promise<void> {
     // If the minor version changed and we already have another one installed, we need to delete it, so it can be properly installed.
     if (currentInstall && currentInstall.version !== requestedInstall.version && (await directoryExists(nodecgIODir))) {
         logger.info(`Deleting nodecg-io version ${currentInstall.version}...`);
-        await removeDirectory(nodecgIODir);
+        await fs.promises.rm(nodecgIODir, { recursive: true, force: true });
         currentInstall = undefined;
     }
 

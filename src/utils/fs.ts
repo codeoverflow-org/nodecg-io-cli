@@ -30,36 +30,6 @@ export async function ensureDirectory(dir: string): Promise<void> {
 }
 
 /**
- * Deletes a directory at the specified path in the filesystem.
- * @param dirPath the directory which should be deleted.
- */
-export async function removeDirectory(dirPath: string): Promise<void> {
-    // Delete all contents of this directory because otherwise we cannot remove it (why can't that be part of fs, oh node 14+ only...)
-    const contents = await fs.readdir(dirPath); // get entries of directory
-
-    const rmPromises = contents.reverse().map(async (f) => {
-        const subpath = path.join(dirPath, f);
-
-        try {
-            const stat = await fs.lstat(subpath);
-            // rm if file or symlink and use this function recursively if directory
-            if (stat.isDirectory() && !stat.isSymbolicLink()) {
-                await removeDirectory(subpath);
-            } else {
-                await fs.unlink(subpath);
-            }
-        } catch (_e) {
-            // ignore that file cannot be removed. Maybe was already removed.
-        }
-    });
-
-    await Promise.all(rmPromises);
-
-    // now that the directory is empty we can delete it.
-    await fs.rmdir(dirPath);
-}
-
-/**
  * Executes the given command and optionally streams the output to the console.
  * @param command the command that should be executed.
  * @param args the args which will be passed to the command

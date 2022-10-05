@@ -2,7 +2,7 @@ import * as chalk from "chalk";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
 import * as http from "isomorphic-git/http/node";
-import { directoryExists, removeDirectory } from "../utils/fs";
+import { directoryExists } from "../utils/fs";
 import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
 import { logger } from "../utils/log";
 import * as path from "path";
@@ -43,7 +43,7 @@ async function manageDocs(nodecgIODir: string, cloneDocs: boolean): Promise<void
     } else if (await directoryExists(docsPath)) {
         // Docs are not wanted but exists (they probably were selected previously) => delete
         logger.debug("Removing docs...");
-        await removeDirectory(docsPath);
+        await fs.promises.rm(docsPath, { recursive: true, force: true });
     }
 }
 
@@ -122,7 +122,7 @@ async function deleteNodeModuleDirectories(nodecgIODir: string): Promise<void> {
 
     for (const nodeModuleDir of nodeModuleDirs) {
         if (await directoryExists(nodeModuleDir)) {
-            await removeDirectory(nodeModuleDir);
+            await fs.promises.rm(nodeModuleDir, { recursive: true, force: true });
         }
     }
 

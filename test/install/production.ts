@@ -1,5 +1,6 @@
 import { vol } from "memfs";
 import * as path from "path";
+import * as fs from "fs";
 import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
 import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
 import * as installation from "../../src/utils/installation";
@@ -56,13 +57,14 @@ describe("diffPackages", () => {
 
 describe("removePackages", () => {
     test("should rm each package directory", async () => {
-        const rmMock = jest.spyOn(fsUtils, "removeDirectory").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
         const i = { ...validProdInstall, packages: [...packages] };
         await removePackages(packages, i, nodecgIODir);
 
         expect(rmMock).toHaveBeenCalledTimes(2);
-        expect(rmMock).toHaveBeenCalledWith(path.join(nodecgIODir, corePkg.path));
-        expect(rmMock).toHaveBeenLastCalledWith(path.join(nodecgIODir, twitchChatPkg.path));
+        const rmOpts = { recursive: true, force: true };
+        expect(rmMock).toHaveBeenCalledWith(path.join(nodecgIODir, corePkg.path), rmOpts);
+        expect(rmMock).toHaveBeenLastCalledWith(path.join(nodecgIODir, twitchChatPkg.path), rmOpts);
         expect(i.packages.length).toBe(0);
     });
 
@@ -106,7 +108,7 @@ describe("installPackages", () => {
 
     test("should revert changes if npm install fails", async () => {
         npmInstallMock.mockRejectedValue(new Error("random error"));
-        const rmMock = jest.spyOn(fsUtils, "removeDirectory").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
 
         // should return the error
         await expect(installPackages(packages, createInstall(), nodecgIODir)).rejects.toThrow("random error");
