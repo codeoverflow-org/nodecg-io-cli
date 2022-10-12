@@ -9,6 +9,7 @@ import {
 import { tempDir, corePkg, fsRoot, twitchChatPkg, dashboardPkg } from "../../test.util";
 import * as fsUtils from "../../../src/utils/fs";
 import * as path from "path";
+import * as fs from "fs";
 
 jest.mock("fs", () => createFsFromVolume(vol));
 afterEach(() => vol.reset());
@@ -69,10 +70,12 @@ describe("createNpmSymlinks", () => {
 });
 
 describe("removeNpmPackage", () => {
-    test("should call to fsUtils.removeDirectory", async () => {
-        const spy = jest.spyOn(fsUtils, "removeDirectory").mockResolvedValue();
+    test("should call to fs.promises.rm to delete directory", async () => {
+        const spy = jest.spyOn(fs.promises, "rm").mockResolvedValue();
         await removeNpmPackage(corePkg, await tempDir());
         expect(spy).toHaveBeenCalled();
+        // Ensure that recursive deletion is enabled
+        expect(spy.mock.calls[0]?.[1]?.recursive).toBe(true);
     });
 });
 

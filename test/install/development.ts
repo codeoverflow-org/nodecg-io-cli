@@ -1,9 +1,9 @@
 import { vol } from "memfs";
 import * as git from "isomorphic-git";
+import * as fs from "fs";
 import * as fsUtils from "../../src/utils/fs";
 import { fsRoot, validDevInstall, nodecgIODir } from "../test.util";
 import * as dev from "../../src/install/development";
-import { removeDirectory } from "../../src/utils/fs";
 
 const defaultFetchResult: git.FetchResult = {
     defaultBranch: "main",
@@ -69,7 +69,7 @@ describe("getGitRepo", () => {
 
     test("should clone repo if directory does not exists", async () => {
         // remove dir so it should clone
-        await removeDirectory(nodecgIODir);
+        await fs.promises.rm(nodecgIODir, { recursive: true, force: true });
 
         await dev.getGitRepo(nodecgIODir, "nodecg-io");
         expect(cloneSpy).toHaveBeenCalled();

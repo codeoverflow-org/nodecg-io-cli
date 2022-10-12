@@ -6,20 +6,25 @@ import * as semver from "semver";
 import { SemVer } from "semver";
 
 /**
- * Ensures that the cli is executed with at least node 12. This is the minimum version that is required
- * and if it is older the cli will exit.
+ * Minimum node.js version that is required to use nodecg-io and this cli.
  */
-export function ensureNode12(): void {
+const minimumNodeVersion = "14.14.0";
+
+/**
+ * Ensures that the node.js installation that is used to execute the cli
+ * meets the required minimum node.js version for nodecg-io,
+ * If it is older the cli will log an error about it and exit.
+ */
+export function ensureMinimumNodeVersion(): void {
     const nodeVersion = process.versions.node;
-    const range = new semver.Range(">=12");
+    const range = new semver.Range(`>=${minimumNodeVersion}`);
 
     if (!semver.satisfies(nodeVersion, range)) {
         logger.error("Please update your node installation.");
-        logger.error(
-            `nodecg-io-cli requires at least node ${chalk.yellowBright("12")}. You have ${chalk.yellowBright(
-                nodeVersion,
-            )}`,
-        );
+
+        const minVer = chalk.yellowBright(minimumNodeVersion);
+        const curVer = chalk.yellowBright(nodeVersion);
+        logger.error(`nodecg-io-cli requires at least node ${minVer}. You have ${curVer}`);
         process.exit(1);
     }
 }

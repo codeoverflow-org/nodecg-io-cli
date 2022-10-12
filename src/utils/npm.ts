@@ -1,7 +1,7 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
 import * as fs from "fs";
 import * as path from "path";
-import { executeCommand, removeDirectory } from "./fs";
+import { executeCommand } from "./fs";
 import { exec } from "child_process";
 import { maxSatisfying, satisfies, SemVer } from "semver";
 import * as zlib from "zlib";
@@ -223,7 +223,7 @@ export async function createNpmSymlinks(packages: NpmPackage[], nodecgIODir: str
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    await removeDirectory(buildNpmPackagePath(pkg, nodecgIODir));
+    await fs.promises.rm(buildNpmPackagePath(pkg, nodecgIODir), { recursive: true, force: true });
 }
 
 /**
