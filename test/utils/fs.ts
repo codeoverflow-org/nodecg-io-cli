@@ -1,9 +1,14 @@
 import { vol } from "memfs";
 import { directoryExists, ensureDirectory, executeCommand } from "../../src/utils/fs";
-import * as path from "path";
 import * as child_process from "child_process";
 import { testDir } from "../test.util";
 import { logger } from "../../src/utils/log";
+
+// FIXME: this only works with this mock that fakes child_process to be a es module. Don't know why, yet.
+jest.mock("child_process", () => ({
+    __esModule: true,
+    ...(jest.requireActual("child_process") as object),
+}));
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());

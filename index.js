@@ -5,4 +5,4 @@
 // but the entry-point needs to be executable so we can't have it in src/index.ts directly
 // because the resulting file won't have the executable flag and you can't properly use it that way.
 
-require("./build/src/index");
+import "./build/index.js";

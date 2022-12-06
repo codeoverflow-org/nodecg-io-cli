@@ -1,11 +1,12 @@
 import { vol } from "memfs";
 import * as path from "path";
 import * as fs from "fs";
-import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
-import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
-import * as installation from "../../src/utils/installation";
-import * as fsUtils from "../../src/utils/fs";
-import * as npm from "../../src/utils/npm";
+import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util.js";
+import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production.js";
+import * as installation from "../../src/utils/installation.js";
+import * as fsUtils from "../../src/utils/fs.js";
+import * as npm from "../../src/utils/npm.js";
+import { jest } from "@jest/globals";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(nodecgIODir));
@@ -57,7 +58,7 @@ describe("diffPackages", () => {
 
 describe("removePackages", () => {
     test("should rm each package directory", async () => {
-        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(vol.promises, "rm").mockClear().mockResolvedValue();
         const i = { ...validProdInstall, packages: [...packages] };
         await removePackages(packages, i, nodecgIODir);
 
@@ -108,7 +109,7 @@ describe("installPackages", () => {
 
     test("should revert changes if npm install fails", async () => {
         npmInstallMock.mockRejectedValue(new Error("random error"));
-        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(vol.promises, "rm").mockClear().mockResolvedValue();
 
         // should return the error
         await expect(installPackages(packages, createInstall(), nodecgIODir)).rejects.toThrow("random error");

@@ -1,4 +1,4 @@
-import * as semver from "semver";
+import semver from "semver";
 import * as path from "path";
 
 export const corePackage = "nodecg-io-core";

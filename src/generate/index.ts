@@ -1,17 +1,17 @@
 import { CommandModule } from "yargs";
-import * as fs from "fs";
-import { logger } from "../utils/log";
-import { directoryExists } from "../utils/fs";
-import { Installation, readInstallInfo } from "../utils/installation";
-import { corePackages } from "../nodecgIOVersions";
-import { GenerationOptions, promptGenerationOpts } from "./prompt";
-import { runNpmBuild, runNpmInstall } from "../utils/npm";
-import { genExtension } from "./extension";
-import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
-import { genDashboard, genGraphic } from "./panel";
-import { genTsConfig } from "./tsConfig";
-import { writeBundleFile, yellowInstallCommand } from "./utils";
-import { genPackageJson } from "./packageJson";
+import { promises as fs } from "fs";
+import { logger } from "../utils/log.js";
+import { directoryExists } from "../utils/fs.js";
+import { Installation, readInstallInfo } from "../utils/installation.js";
+import { corePackages } from "../nodecgIOVersions.js";
+import { GenerationOptions, promptGenerationOpts } from "./prompt.js";
+import { runNpmBuild, runNpmInstall } from "../utils/npm.js";
+import { genExtension } from "./extension.js";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation.js";
+import { genDashboard, genGraphic } from "./panel.js";
+import { genTsConfig } from "./tsConfig.js";
+import { writeBundleFile, yellowInstallCommand } from "./utils.js";
+import { genPackageJson } from "./packageJson.js";
 
 export const generateModule: CommandModule = {
     command: "generate",
@@ -64,11 +64,11 @@ export function ensureValidInstallation(install: Installation | undefined): inst
 export async function generateBundle(opts: GenerationOptions, install: Installation): Promise<void> {
     // Create dir if necessary
     if (!(await directoryExists(opts.bundlePath))) {
-        await fs.promises.mkdir(opts.bundlePath);
+        await fs.mkdir(opts.bundlePath);
     }
 
     // In case some re-executes the command in a already used bundle name we should not overwrite their stuff and error instead.
-    const filesInBundleDir = await fs.promises.readdir(opts.bundlePath);
+    const filesInBundleDir = await fs.readdir(opts.bundlePath);
     if (filesInBundleDir.length > 0) {
         throw new Error(
             `Directory for bundle at ${opts.bundlePath} already exists and contains files.\n` +

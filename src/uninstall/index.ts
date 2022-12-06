@@ -1,10 +1,10 @@
 import * as path from "path";
-import * as fs from "fs";
+import { promises as fs } from "fs";
 import { CommandModule } from "yargs";
-import { directoryExists } from "../utils/fs";
-import { logger } from "../utils/log";
-import { manageBundleDir } from "../utils/nodecgConfig";
-import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
+import { directoryExists } from "../utils/fs.js";
+import { logger } from "../utils/log.js";
+import { manageBundleDir } from "../utils/nodecgConfig.js";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation.js";
 
 export const uninstallModule: CommandModule = {
     command: "uninstall",
@@ -37,7 +37,7 @@ export async function uninstall(): Promise<void> {
 
     // Delete directory
     logger.debug(`Uninstalling nodecg-io from nodecg installation at ${nodecgDir}...`);
-    await fs.promises.rm(nodecgIODir, { recursive: true, force: true });
+    await fs.rm(nodecgIODir, { recursive: true, force: true });
 
     logger.success("Successfully uninstalled nodecg-io.");
 }

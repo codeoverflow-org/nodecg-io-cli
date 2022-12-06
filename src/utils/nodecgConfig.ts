@@ -1,7 +1,7 @@
 import * as path from "path";
 import { promises as fs } from "fs";
-import { logger } from "./log";
-import { directoryExists } from "./fs";
+import { logger } from "./log.js";
+import { directoryExists } from "./fs.js";
 
 /**
  * A configuration of nodecg according to https://www.nodecg.dev/docs/nodecg-configuration/

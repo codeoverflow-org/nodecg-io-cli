@@ -1,13 +1,13 @@
-import * as chalk from "chalk";
+import chalk from "chalk";
 import * as git from "isomorphic-git";
 import * as fs from "fs";
-import * as http from "isomorphic-git/http/node";
-import { directoryExists } from "../utils/fs";
-import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
-import { logger } from "../utils/log";
+import * as http from "isomorphic-git/http/node/index.js";
+import { directoryExists } from "../utils/fs.js";
+import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation.js";
+import { logger } from "../utils/log.js";
 import * as path from "path";
-import * as glob from "glob";
-import { runNpmBuild, runNpmInstall } from "../utils/npm";
+import glob from "glob";
+import { runNpmBuild, runNpmInstall } from "../utils/npm.js";
 
 type CloneRepository = "nodecg-io" | "nodecg-io-docs";
 const nodecgIOCloneURL = "https://github.com/codeoverflow-org/nodecg-io.git";

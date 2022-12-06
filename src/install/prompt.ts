@@ -1,8 +1,8 @@
-import { Installation } from "../utils/installation";
-import * as inquirer from "inquirer";
-import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm";
-import * as semver from "semver";
-import { logger } from "../utils/log";
+import { Installation } from "../utils/installation.js";
+import inquirer from "inquirer";
+import { getHighestPatchVersion, getMinorVersions, NpmPackage } from "../utils/npm.js";
+import semver from "semver";
+import { logger } from "../utils/log.js";
 import {
     corePackage,
     corePackages,
@@ -11,8 +11,8 @@ import {
     developmentVersion,
     getServicesForVersion,
     supportedNodeCGIORange,
-} from "../nodecgIOVersions";
-import { InstallCommandOptions } from ".";
+} from "../nodecgIOVersions.js";
+import { InstallCommandOptions } from "./index.js";
 
 interface PromptInput {
     version: string;

@@ -1,9 +1,9 @@
 import axios, { AxiosRequestConfig, AxiosResponse } from "axios";
-import * as fs from "fs";
+import { promises as fs, ReadStream } from "fs";
 import * as path from "path";
-import { executeCommand } from "./fs";
+import { executeCommand } from "./fs.js";
 import { exec } from "child_process";
-import { maxSatisfying, satisfies, SemVer } from "semver";
+import semver from "semver";
 import * as zlib from "zlib";
 import * as tar from "tar-fs";
 
@@ -49,12 +49,14 @@ export function isPackageEquals(a: NpmPackage, b: NpmPackage): boolean {
  * @param packageName which package you want the versions to.
  * @returns the versions of the package
  */
-export async function getPackageVersions(packageName: string): Promise<SemVer[]> {
-    const response = (await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig)) as AxiosResponse<{
+export async function getPackageVersions(packageName: string): Promise<semver.SemVer[]> {
+    // FIXME: types require "axios" while node.js requires "axios.defaults". Needs to be figured out.
+    // @ts-ignore
+    const response = (await axios.default(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig)) as AxiosResponse<{
         versions?: Record<string, never>;
     }>;
     if (response.data.versions) {
-        return Object.keys(response.data.versions).map((versionString) => new SemVer(versionString));
+        return Object.keys(response.data.versions).map((versionString) => new semver.SemVer(versionString));
     } else {
         // Version field is missing when e.g. the package has been fully unpublished
         // see https://www.npmjs.com/policies/unpublish for further details.
@@ -67,8 +69,10 @@ export async function getPackageVersions(packageName: string): Promise<SemVer[]>
  * @param packageName the package for which you want to get the latest published version.
  * @return the latest version if the package was found and null if the package was not found on the npm registry.
  */
-export async function getLatestPackageVersion(packageName: string): Promise<SemVer> {
-    const response = await axios(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
+export async function getLatestPackageVersion(packageName: string): Promise<semver.SemVer> {
+    // FIXME: types require "axios" while node.js requires "axios.defaults". Needs to be figured out.
+    // @ts-ignore
+    const response = await axios.default(npmRegistryEndpoint + packageName, axiosNpmMetadataConfig);
 
     // Gets version through npm tag "latest" so we don't use any pre-release or beta versions
     const latest = response.data["dist-tags"]["latest"];
@@ -76,7 +80,7 @@ export async function getLatestPackageVersion(packageName: string): Promise<SemV
         throw new Error(`Metadata response for ${packageName} does not contain a latest dist-tag.`);
     }
 
-    return new SemVer(latest);
+    return new semver.SemVer(latest);
 }
 
 /**
@@ -98,9 +102,9 @@ export async function getMinorVersions(packageName: string): Promise<string[]> {
  * @param packageName the package you want the highest patch version to
  * @param majorMinor the major.minor version that you want to get the highest patch version of
  */
-export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<SemVer | null> {
+export async function getHighestPatchVersion(packageName: string, majorMinor: string): Promise<semver.SemVer | null> {
     const allVersions = await getPackageVersions(packageName);
-    return maxSatisfying(allVersions, "~" + majorMinor);
+    return semver.maxSatisfying(allVersions, "~" + majorMinor);
 }
 
 /**
@@ -123,7 +127,7 @@ export function buildNpmPackagePath(pkg: NpmPackage, nodecgIODir: string): strin
  * Creates a read stream that will be fed the tarball of the passed package directly from the official npm registry.
  * @param pkg the package to fetch
  */
-export async function createNpmPackageReadStream(pkg: NpmPackage): Promise<fs.ReadStream> {
+export async function createNpmPackageReadStream(pkg: NpmPackage): Promise<ReadStream> {
     const response = await axios({
         url: buildNpmPackageURL(pkg),
         method: "GET",
@@ -139,11 +143,7 @@ export async function createNpmPackageReadStream(pkg: NpmPackage): Promise<fs.Re
  * @param tarStream the stream of the tar file you get by {@link createNpmPackageReadStream}
  * @param nodecgIODir the nodecg-io directory
  */
-export async function extractNpmPackageTar(
-    pkg: NpmPackage,
-    tarStream: fs.ReadStream,
-    nodecgIODir: string,
-): Promise<void> {
+export async function extractNpmPackageTar(pkg: NpmPackage, tarStream: ReadStream, nodecgIODir: string): Promise<void> {
     const extractStream = tarStream.pipe(zlib.createGunzip({ level: 3 })).pipe(
         tar.extract(buildNpmPackagePath(pkg, nodecgIODir), {
             map: (header) => {
@@ -204,12 +204,12 @@ export async function createNpmSymlinks(packages: NpmPackage[], nodecgIODir: str
 
             return pkg.symlink.map(async (linkPkg) => {
                 const pkgNodeModules = path.join(buildNpmPackagePath(pkg, nodecgIODir), nodeModulesDir);
-                await fs.promises.mkdir(pkgNodeModules);
+                await fs.mkdir(pkgNodeModules);
 
                 const linkModulePath = path.join(pkgNodeModules, linkPkg);
                 const hoistedPath = path.join(nodecgIODir, nodeModulesDir, linkPkg);
 
-                await fs.promises.symlink(hoistedPath, linkModulePath, "junction");
+                await fs.symlink(hoistedPath, linkModulePath, "junction");
             });
         })
         .flat();
@@ -223,7 +223,7 @@ export async function createNpmSymlinks(packages: NpmPackage[], nodecgIODir: str
  * @param nodecgIODir the directory in which nodecg-io is installed
  */
 export async function removeNpmPackage(pkg: NpmPackage, nodecgIODir: string): Promise<void> {
-    await fs.promises.rm(buildNpmPackagePath(pkg, nodecgIODir), { recursive: true, force: true });
+    await fs.rm(buildNpmPackagePath(pkg, nodecgIODir), { recursive: true, force: true });
 }
 
 /**
@@ -244,7 +244,7 @@ export async function findNpmPackages(basePath: string): Promise<NpmPackage[]> {
     const pkg = await getNpmPackageFromPath(basePath);
 
     // Enumerate sub directories and get any packages in these too
-    const subDirs = await fs.promises.readdir(basePath, { withFileTypes: true });
+    const subDirs = await fs.readdir(basePath, { withFileTypes: true });
     const subPackages = await Promise.all(
         subDirs
             .filter((f) => f.isDirectory())
@@ -264,7 +264,7 @@ export async function findNpmPackages(basePath: string): Promise<NpmPackage[]> {
 async function getNpmPackageFromPath(basePath: string): Promise<NpmPackage | undefined> {
     const packageJsonPath = `${basePath}/package.json`;
     try {
-        const packageJson = await fs.promises.readFile(packageJsonPath, "utf8");
+        const packageJson = await fs.readFile(packageJsonPath, "utf8");
         const pkg = JSON.parse(packageJson);
         if (pkg.private) return undefined;
 
@@ -282,7 +282,7 @@ async function getNpmPackageFromPath(basePath: string): Promise<NpmPackage | und
  * Gets version of the installed npm by running "npm --version".
  * @returns the npm version or undefined if npm is not installed/not in $PATH.
  */
-export function getNpmVersion(): Promise<SemVer | undefined> {
+export function getNpmVersion(): Promise<semver.SemVer | undefined> {
     return new Promise((resolve, reject) => {
         const child = exec("npm --version", (err, stdout) => {
             if (err) {
@@ -294,7 +294,7 @@ export function getNpmVersion(): Promise<SemVer | undefined> {
                     reject(err);
                 }
             } else {
-                const ver = new SemVer(stdout);
+                const ver = new semver.SemVer(stdout);
                 resolve(ver);
             }
         });
@@ -311,7 +311,7 @@ export async function requireNpmV7(): Promise<void> {
         throw new Error("Could not find npm. Make sure npm is installed and in your $PATH.");
     }
 
-    if (!satisfies(version, ">=7")) {
+    if (!semver.satisfies(version, ">=7")) {
         throw new Error(
             `The nodecg-io cli requires a npm version of 7.0.0 or higher. You have ${version.version}.` +
                 '\nUpdate npm by running "npm install -g npm".',

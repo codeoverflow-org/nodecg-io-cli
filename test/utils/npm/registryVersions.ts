@@ -1,4 +1,4 @@
-import { AxiosRequestConfig, AxiosPromise, AxiosResponse } from "axios";
+import type { AxiosResponse, AxiosRequestConfig, AxiosPromise } from "axios";
 import {
     getHighestPatchVersion,
     getLatestPackageVersion,

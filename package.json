@@ -3,6 +3,7 @@
     "version": "0.3.1",
     "description": "The CLI to install and manage nodecg-io installations. Also helps you with nodecg-io bundle related development.",
     "main": "index.js",
+    "type": "module",
     "scripts": {
         "build": "tsc -b",
         "run": "tsc -b && node build/index.js",

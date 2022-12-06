@@ -1,8 +1,8 @@
 import CodeBlockWriter from "code-block-writer";
-import { getServiceClientName } from "../nodecgIOVersions";
-import { Installation } from "../utils/installation";
-import { CodeLanguage, GenerationOptions } from "./prompt";
-import { writeBundleFile } from "./utils";
+import { getServiceClientName } from "../nodecgIOVersions.js";
+import { Installation } from "../utils/installation.js";
+import { CodeLanguage, GenerationOptions } from "./prompt.js";
+import { writeBundleFile } from "./utils.js";
 
 interface ServiceNames {
     name: string;
@@ -39,7 +39,11 @@ export async function genExtension(opts: GenerationOptions, install: Installatio
     // the service names for each version are hardcoded and unknown for a development version.
     const services = install.dev === false ? opts.services.map((svc) => getServiceNames(svc, install.version)) : [];
 
-    const writer = new CodeBlockWriter();
+    // FIXME: Types and jest(running via node.js) require "new CodeBlockWriter()", but when running with node.js
+    // this needs to be "new CodeBlockWriter.default()" to function, wtf?!.
+    // Needs figuring out why this is happening.
+    //@ts-ignore
+    const writer = new CodeBlockWriter.default();
 
     // imports
     genImport(writer, "requireService", opts.corePackage.name, opts.language);

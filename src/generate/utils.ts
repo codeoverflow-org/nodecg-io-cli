@@ -1,8 +1,8 @@
 import * as path from "path";
-import { logger } from "../utils/log";
-import { directoryExists } from "../utils/fs";
-import * as fs from "fs";
-import * as chalk from "chalk";
+import { logger } from "../utils/log.js";
+import { directoryExists } from "../utils/fs.js";
+import { promises as fs } from "fs";
+import chalk from "chalk";
 
 // Colored commands for logging purposes.
 export const yellowInstallCommand = chalk.yellow("nodecg-io install");
@@ -20,9 +20,9 @@ export async function writeBundleFile(content: string | Record<string, unknown>,
     // Create directory if missing
     const parent = path.dirname(finalPath);
     if (!(await directoryExists(parent))) {
-        await fs.promises.mkdir(parent);
+        await fs.mkdir(parent);
     }
 
     const str = typeof content === "string" ? content : JSON.stringify(content, null, 4);
-    await fs.promises.writeFile(finalPath, str);
+    await fs.writeFile(finalPath, str);
 }

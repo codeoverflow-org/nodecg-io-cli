@@ -1,6 +1,6 @@
 import { vol } from "memfs";
-import { genTsConfig } from "../../src/generate/tsConfig";
-import { defaultOpts, jsOpts } from "./opts.util";
+import { genTsConfig } from "../../src/generate/tsConfig.js";
+import { defaultOpts, jsOpts } from "./opts.util.js";
 import * as path from "path";
 
 jest.mock("fs", () => vol);

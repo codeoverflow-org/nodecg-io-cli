@@ -1,5 +1,5 @@
-import { GenerationOptions } from "./prompt";
-import { writeBundleFile } from "./utils";
+import { GenerationOptions } from "./prompt.js";
+import { writeBundleFile } from "./utils.js";
 
 type PanelType = "graphic" | "dashboard";
 
