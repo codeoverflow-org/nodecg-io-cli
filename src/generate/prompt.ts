@@ -7,7 +7,7 @@ import { getServicesFromInstall } from "../install/prompt";
 import { yellowInstallCommand } from "./utils";
 import { findNpmPackages, NpmPackage } from "../utils/npm";
 import { corePackage } from "../nodecgIOVersions";
-import { getNodeCGIODirectory } from "../utils/nodecgInstallation";
+import { getNodeCGIODirectory, getNodeCGVersion } from "../utils/nodecgInstallation";
 
 /**
  * Describes all options for bundle generation a user has answered with inside the inquirer prompt
@@ -29,7 +29,7 @@ export interface PromptedGenerationOptions {
 export interface GenerationOptions extends PromptedGenerationOptions {
     servicePackages: NpmPackage[];
     corePackage: NpmPackage;
-    nodeCGTypingsPackage: "nodecg" | "nodecg-types";
+    nodeCGVersion: semver.SemVer;
     bundlePath: string;
 }
 
@@ -106,7 +106,7 @@ export async function promptGenerationOpts(nodecgDir: string, install: Installat
         },
     ]);
 
-    return computeGenOptsFields(opts, install, installedPackages);
+    return await computeGenOptsFields(opts, installedPackages, nodecgDir);
 }
 
 // region prompt validation
@@ -156,11 +156,11 @@ function validateServiceSelection(services: string[]): true | string {
  * @param install the current nodecg-io installation. Used to get installed packages/exact versions.
  * @return opts including computed fields.
  */
-export function computeGenOptsFields(
+export async function computeGenOptsFields(
     opts: PromptedGenerationOptions,
-    install: Installation,
     installedPackages: NpmPackage[],
-): GenerationOptions {
+    nodecgDir: string,
+): Promise<GenerationOptions> {
     const corePkg = installedPackages.find((pkg) => pkg.name === corePackage);
     if (corePkg === undefined) {
         throw new Error("Core package in installation info could not be found.");
@@ -178,6 +178,6 @@ export function computeGenOptsFields(
             return svcPackage;
         }),
         bundlePath: path.join(opts.bundleDir, opts.bundleName),
-        nodeCGTypingsPackage: install.version === "0.1" ? "nodecg" : "nodecg-types",
+        nodeCGVersion: await getNodeCGVersion(nodecgDir),
     };
 }

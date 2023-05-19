@@ -1,6 +1,6 @@
-import { computeGenOptsFields, GenerationOptions, PromptedGenerationOptions } from "../../src/generate/prompt";
+import { GenerationOptions, PromptedGenerationOptions } from "../../src/generate/prompt";
 import * as path from "path";
-import { fsRoot, twitchChatPkg, validProdInstall } from "../test.util";
+import { corePkg, fsRoot, twitchChatPkg } from "../test.util";
 import { SemVer } from "semver";
 
 export const defaultOptsPrompt: PromptedGenerationOptions = {
@@ -14,5 +14,11 @@ export const defaultOptsPrompt: PromptedGenerationOptions = {
     dashboard: false,
 };
 
-export const defaultOpts = computeGenOptsFields(defaultOptsPrompt, validProdInstall, validProdInstall.packages);
+export const defaultOpts: GenerationOptions = {
+    ...defaultOptsPrompt,
+    servicePackages: [twitchChatPkg],
+    corePackage: corePkg,
+    nodeCGVersion: new SemVer("2.0.0"),
+    bundlePath: path.join(fsRoot, "bundles", "test-bundle"),
+};
 export const jsOpts: GenerationOptions = { ...defaultOpts, language: "javascript" };
