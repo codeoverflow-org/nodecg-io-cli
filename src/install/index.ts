@@ -1,15 +1,15 @@
 import { CommandModule } from "yargs";
 import * as path from "path";
 import * as fs from "fs";
-import { directoryExists } from "../utils/fs";
-import { createDevInstall } from "./development";
-import { manageBundleDir } from "../utils/nodecgConfig";
-import { promptForInstallInfo } from "./prompt";
-import { readInstallInfo } from "../utils/installation";
-import { createProductionInstall } from "./production";
-import { logger } from "../utils/log";
-import { requireNpmV7 } from "../utils/npm";
-import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation";
+import { directoryExists } from "../utils/fs.js";
+import { createDevInstall } from "./development.js";
+import { manageBundleDir } from "../utils/nodecgConfig.js";
+import { promptForInstallInfo } from "./prompt.js";
+import { readInstallInfo } from "../utils/installation.js";
+import { createProductionInstall } from "./production.js";
+import { logger } from "../utils/log.js";
+import { requireNpmV7 } from "../utils/npm.js";
+import { findNodeCGDirectory, getNodeCGIODirectory } from "../utils/nodecgInstallation.js";
 
 export interface InstallCommandOptions {
     "nodecg-io-version"?: string;

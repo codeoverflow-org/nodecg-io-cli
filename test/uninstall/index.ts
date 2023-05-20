@@ -4,7 +4,6 @@ import * as nodecgInstall from "../../src/utils/nodecgInstallation";
 import * as nodecgConfig from "../../src/utils/nodecgConfig";
 import { fsRoot } from "../test.util";
 import * as path from "path";
-import * as fs from "fs";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
@@ -13,7 +12,7 @@ const nodecgIODir = path.join(fsRoot, "nodecg-io");
 
 jest.spyOn(nodecgInstall, "findNodeCGDirectory").mockResolvedValue(fsRoot);
 const spyManageBundleDir = jest.spyOn(nodecgConfig, "manageBundleDir");
-const spyRm = jest.spyOn(fs.promises, "rm");
+const spyRm = jest.spyOn(vol.promises, "rm");
 
 afterEach(() => {
     spyManageBundleDir.mockClear();

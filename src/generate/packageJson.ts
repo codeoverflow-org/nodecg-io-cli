@@ -1,10 +1,10 @@
-import { GenerationOptions } from "./prompt";
-import { logger } from "../utils/log";
-import { getLatestPackageVersion } from "../utils/npm";
-import { genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
+import { GenerationOptions } from "./prompt.js";
+import { logger } from "../utils/log.js";
+import { getLatestPackageVersion } from "../utils/npm.js";
+import { genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel.js";
 import { SemVer } from "semver";
-import { writeBundleFile } from "./utils";
-import { Installation } from "../utils/installation";
+import { writeBundleFile } from "./utils.js";
+import { Installation } from "../utils/installation.js";
 
 // Loaction where the development tarballs are hosted.
 export const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";

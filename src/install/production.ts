@@ -1,4 +1,4 @@
-import { ProductionInstallation, writeInstallInfo } from "../utils/installation";
+import { ProductionInstallation, writeInstallInfo } from "../utils/installation.js";
 import {
     NpmPackage,
     removeNpmPackage,
@@ -8,12 +8,12 @@ import {
     downloadNpmPackage,
     createNpmSymlinks,
     getSubPackages,
-} from "../utils/npm";
-import { directoryExists, ensureDirectory } from "../utils/fs";
-import { logger } from "../utils/log";
+} from "../utils/npm.js";
+import { directoryExists, ensureDirectory } from "../utils/fs.js";
+import { logger } from "../utils/log.js";
 import { promises as fs } from "fs";
-import path = require("path");
-import chalk = require("chalk");
+import * as path from "path";
+import chalk from "chalk";
 
 export async function createProductionInstall(
     requested: ProductionInstallation,

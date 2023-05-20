@@ -1,13 +1,13 @@
-import * as semver from "semver";
-import * as inquirer from "inquirer";
+import semver from "semver";
+import inquirer from "inquirer";
 import * as path from "path";
-import { directoryExists } from "../utils/fs";
-import { Installation } from "../utils/installation";
-import { getServicesFromInstall } from "../install/prompt";
-import { yellowInstallCommand } from "./utils";
-import { findNpmPackages, NpmPackage } from "../utils/npm";
-import { corePackage } from "../nodecgIOVersions";
-import { getNodeCGIODirectory } from "../utils/nodecgInstallation";
+import { directoryExists } from "../utils/fs.js";
+import { Installation } from "../utils/installation.js";
+import { getServicesFromInstall } from "../install/prompt.js";
+import { yellowInstallCommand } from "./utils.js";
+import { findNpmPackages, NpmPackage } from "../utils/npm.js";
+import { corePackage } from "../nodecgIOVersions.js";
+import { getNodeCGIODirectory } from "../utils/nodecgInstallation.js";
 
 /**
  * Describes all options for bundle generation a user has answered with inside the inquirer prompt

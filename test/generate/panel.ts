@@ -1,7 +1,8 @@
+import { jest } from "@jest/globals";
 import { vol } from "memfs";
 import * as path from "path";
-import { defaultOpts } from "./opts.util";
-import { genDashboard, genGraphic } from "../../src/generate/panel";
+import { defaultOpts } from "./opts.util.js";
+import { genDashboard, genGraphic } from "../../src/generate/panel.js";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(defaultOpts.bundlePath, { recursive: true }));

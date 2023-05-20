@@ -1,7 +1,6 @@
 import { promises as fs } from "fs";
-import * as path from "path";
 import { spawn } from "child_process";
-import { logger } from "./log";
+import { logger } from "./log.js";
 
 /**
  * Checks whether the specified directory exists or not.

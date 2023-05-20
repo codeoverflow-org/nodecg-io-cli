@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { vol } from "memfs";
 import { corePkg, fsRoot, nodecgPackageJsonStr, twitchChatPkg, validDevInstall, validProdInstall } from "../test.util";
 import { SemVer } from "semver";

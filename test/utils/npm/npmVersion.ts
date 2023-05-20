@@ -3,6 +3,12 @@ import { ExecException } from "child_process";
 import { getNpmVersion, requireNpmV7 } from "../../../src/utils/npm";
 import { oldNpmVersion, validNpmVersion } from "../../test.util";
 
+// FIXME: this only works with this mock that fakes child_process to be a es module. Don't know why, yet.
+jest.mock("child_process", () => ({
+    __esModule: true,
+    ...jest.requireActual("child_process"),
+}));
+
 function createExecMock(versionValue: string | undefined) {
     const execSpy = jest.spyOn(child_process, "exec");
 

@@ -1,4 +1,4 @@
-import * as chalk from "chalk";
+import chalk from "chalk";
 
 // This is a very small logger that just adapts the color of the messages that you log
 // unimportant messages get dim colors and important ones get brighter colors.

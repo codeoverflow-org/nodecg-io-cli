@@ -1,7 +1,7 @@
 import * as path from "path";
 import * as fs from "fs";
-import { SemVer } from "semver";
-import { directoryExists } from "./fs";
+import * as semver from "semver";
+import { directoryExists } from "./fs.js";
 
 /**
  * Traverses the filesystem and uses {@link isNodeCGDirectory} to find a local nodecg installation.
@@ -45,14 +45,14 @@ async function isNodeCGDirectory(dir: string): Promise<boolean> {
  * @param nodecgDir the directory in which nodecg is located.
  * @returns the version of the nodecg installation
  */
-export async function getNodeCGVersion(nodecgDir: string): Promise<SemVer> {
+export async function getNodeCGVersion(nodecgDir: string): Promise<semver.SemVer> {
     const packageJson = await readPackageJson(nodecgDir);
     const version = packageJson["version"];
     if (version === undefined) {
         throw new Error("Version field is missin in the NodeCG package.json.");
     }
 
-    return new SemVer(version);
+    return new semver.SemVer(version);
 }
 
 async function readPackageJson(nodecgDir: string): Promise<Record<string, string>> {
