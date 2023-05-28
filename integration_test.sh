@@ -22,7 +22,14 @@ function clean_test_directory {
 trap clean_test_directory EXIT
 
 cd $dir
-git clone https://github.com/nodecg/nodecg.git --depth 1 .
+
+# Download NodeCG
+if [ "$version" == "0.1" ] || [ "$version" == "0.2" ]; then
+    # if version is 0.1 or 0.2 then switch back to NodeCG v1
+    git clone https://github.com/nodecg/nodecg.git --depth 1 --branch legacy-1.x .
+else
+    git clone https://github.com/nodecg/nodecg.git --depth 1 .
+fi
 
 if [ "$version" == "development" ]; then
     nodecg-io install --nodecg-io-version $version --docs

@@ -6,8 +6,8 @@ import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
 import * as npm from "../../src/utils/npm";
 import { ensureValidInstallation, generateBundle } from "../../src/generate";
-import { computeGenOptsFields, GenerationOptions } from "../../src/generate/prompt";
-import { defaultOpts, defaultOptsPrompt, jsOpts } from "./opts.util";
+import { GenerationOptions } from "../../src/generate/prompt";
+import { defaultOpts, jsOpts } from "./opts.util";
 import { developmentPublishRootUrl } from "../../src/generate/packageJson";
 import { Installation } from "../../src/utils/installation";
 
@@ -75,10 +75,10 @@ describe("generateBundle", () => {
 
 describe("genPackageJson", () => {
     // We don't have a good type for a package.json and this is only testing code so this should be fine.
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     async function genPackageJSON(
         opts: GenerationOptions = defaultOpts,
         install: Installation = validProdInstall,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
     ): Promise<any> {
         await generateBundle(opts, install);
         const packageJsonStr = await vol.promises.readFile(packageJsonPath);
@@ -108,9 +108,10 @@ describe("genPackageJson", () => {
         expect(e).toEqual(expect.arrayContaining([[twitchChatPkg.name, `^${twitchChatPkg.version}`]]));
 
         // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
+        // And nodecg should be the version of the NodeCG install
         expect(e).toEqual(expect.arrayContaining([["typescript", `^1.2.3`]]));
         expect(e).toEqual(expect.arrayContaining([["@types/node", `^1.2.3`]]));
-        expect(e).toEqual(expect.arrayContaining([["nodecg", `^1.2.3`]]));
+        expect(e).toEqual(expect.arrayContaining([["nodecg", `^${defaultOpts.nodeCGVersion}`]]));
     });
 
     test("should get dependencies using tarballs if a development install is used", async () => {
@@ -119,18 +120,37 @@ describe("genPackageJson", () => {
         expect(deps["nodecg-io-core"]).toContain(developmentPublishRootUrl);
     });
 
-    test("should use nodecg-types for 0.2 or higher", async () => {
-        const opts = computeGenOptsFields(
-            defaultOptsPrompt,
-            { ...validProdInstall, version: "0.2" },
-            validProdInstall.packages,
-        );
-        const deps = (await genPackageJSON(opts))["dependencies"];
-        const e = Object.entries(deps);
-        expect(e).toEqual(expect.arrayContaining([[twitchChatPkg.name, `^${twitchChatPkg.version}`]]));
+    test("should use nodecg-types for 0.2", async () => {
+        const install = {
+            ...validProdInstall,
+            version: "0.2",
+        };
+        const deps = (await genPackageJSON(defaultOpts, install))["dependencies"];
 
         // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
-        expect(e).toEqual(expect.arrayContaining([["nodecg-types", `^1.2.3`]]));
+        expect(deps["nodecg-types"]).toBe("^1.2.3");
+    });
+
+    // TODO: seperate in 0.3 and dev once 0.3 has been released and added
+    test("should use nodecg-types for 0.3 or higher/dev if NodeCG v1", async () => {
+        const opts = {
+            ...defaultOpts,
+            nodeCGVersion: new SemVer("1.9.0"),
+        };
+        const deps = (await genPackageJSON(opts, validDevInstall))["dependencies"];
+
+        // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
+        expect(deps["nodecg-types"]).toBe("^1.2.3");
+    });
+
+    test("should use @nodecg/types for 0.3 or higher/dev if NodeCG v2", async () => {
+        const opts = {
+            ...defaultOpts,
+            nodeCGVersion: new SemVer("2.1.0"),
+        };
+        const deps = (await genPackageJSON(opts, validDevInstall))["dependencies"];
+        expect(deps["@nodecg/types"]).toBeDefined();
+        expect(deps["@nodecg/types"]).toBe("^2.1.0"); // Should be same version as NodeCG
     });
 
     test("should have build scripts if typescript", async () => {

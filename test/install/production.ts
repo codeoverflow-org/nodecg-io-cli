@@ -2,10 +2,17 @@ import { vol } from "memfs";
 import * as path from "path";
 import * as fs from "fs";
 import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
-import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
+import {
+    checkNodeCGCompatibility,
+    diffPackages,
+    installPackages,
+    removePackages,
+    validateInstall,
+} from "../../src/install/production";
 import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
 import * as npm from "../../src/utils/npm";
+import { SemVer } from "semver";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(nodecgIODir));
@@ -19,6 +26,35 @@ const corePkg2 = {
     version: "0.2.0",
 };
 const packages = [corePkg, twitchChatPkg];
+
+describe("checkNodeCGCompatibility", () => {
+    const testCases: [string, number, boolean][] = [
+        ["0.1", 0, false],
+        ["0.1", 1, true],
+        ["0.1", 2, false],
+        ["0.2", 1, true],
+        ["0.2", 2, false],
+        ["0.3", 1, true],
+        ["0.3", 2, true],
+        ["development", 1, true],
+        ["development", 2, true],
+        ["development", 3, false],
+    ];
+
+    testCases.forEach(([version, nodecgVersion, shouldWork]) => {
+        test(`should ${shouldWork ? "allow" : "not allow"} installing ${version} with NodeCG v${nodecgVersion}`, () => {
+            const promise = checkNodeCGCompatibility(
+                { ...validProdInstall, version },
+                new SemVer(`v${nodecgVersion}.0.0`),
+            );
+            if (shouldWork) {
+                return expect(promise).resolves.toBeUndefined();
+            } else {
+                return expect(promise).rejects.toThrowError();
+            }
+        });
+    });
+});
 
 describe("diffPackages", () => {
     test("should return not already installed package in pkgInstall", () => {

@@ -91,6 +91,7 @@ async function install(opts: InstallCommandOptions): Promise<void> {
             requestedInstall,
             currentInstall && !currentInstall.dev ? currentInstall : undefined,
             nodecgIODir,
+            nodecgDir,
         );
     }
 

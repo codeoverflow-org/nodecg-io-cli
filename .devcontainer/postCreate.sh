@@ -8,4 +8,4 @@ npm link
 # Get nodecg so you can test the cli using this installation
 [ ! -d "nodecg" ] && git clone https://github.com/nodecg/nodecg.git 
 
-cd nodecg && npm i --omit=dev
+cd nodecg && npm i && npm run build

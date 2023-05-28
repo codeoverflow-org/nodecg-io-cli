@@ -14,12 +14,17 @@ import { logger } from "../utils/log";
 import { promises as fs } from "fs";
 import path = require("path");
 import chalk = require("chalk");
+import { SemVer } from "semver";
+import { getNodeCGVersion } from "../utils/nodecgInstallation";
 
 export async function createProductionInstall(
     requested: ProductionInstallation,
     current: ProductionInstallation | undefined,
     nodecgIODir: string,
+    nodecgDir: string,
 ): Promise<void> {
+    const nodecgVersion = await getNodeCGVersion(nodecgDir);
+    await checkNodeCGCompatibility(requested, nodecgVersion);
     await ensureDirectory(nodecgIODir);
 
     if (current) {
@@ -38,6 +43,27 @@ export async function createProductionInstall(
 
     if (pkgInstall.length > 0) {
         await installPackages(pkgInstall, current, nodecgIODir);
+    }
+}
+
+/**
+ * Checks whether the nodecg-io version that should be installed is compatible with the used NodeCG version-
+ * @param requestedInstall the target nodecg-io install
+ * @param nodecgDir the directory in which NodeCG is installed, used to get the NodeCG version
+ */
+export async function checkNodeCGCompatibility(requestedInstall: ProductionInstallation, nodecgVersion: SemVer) {
+    const supportedNodeCGVersions = [1];
+    if (requestedInstall.version !== "0.1" && requestedInstall.version !== "0.2") {
+        // All versions above 0.2 support NodeCG v2 as well
+        supportedNodeCGVersions.push(2);
+    }
+
+    const nodeCGMajorVersion = nodecgVersion.major;
+    if (!supportedNodeCGVersions.includes(nodeCGMajorVersion)) {
+        throw new Error(
+            `Your currently used NodeCG v${nodeCGMajorVersion} is not supported by nodecg-io ${requestedInstall.version}. ` +
+                `Supported NodeCG major versions for this nodecg-io version are: ${supportedNodeCGVersions.join(", ")}`,
+        );
     }
 }
 
