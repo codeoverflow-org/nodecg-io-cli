@@ -29,7 +29,7 @@ export async function genPackageJson(opts: GenerationOptions, install: Installat
         version: opts.version.version,
         private: true,
         nodecg: {
-            compatibleRange: "^1.4.0",
+            compatibleRange: genNodeCGCompatibleRange(install),
             bundleDependencies: Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, `^${pkg.version}`])),
             graphics: genNodeCGGraphicConfig(opts),
             dashboardPanels: genNodeCGDashboardConfig(opts),
@@ -125,5 +125,18 @@ function getNodecgIODependency(packageName: string, version: string | SemVer, in
         return [packageName, `${developmentPublishRootUrl}${packageName}-${version}.tgz`];
     } else {
         return [packageName, `^${version}`];
+    }
+}
+
+/**
+ * Generates the range of nodecg versions that are compatible with the currently used nodecg-io version.
+ * @param install the nodecg-io installation, used to get the version
+ * @returns the semver range of compatible nodecg versions
+ */
+function genNodeCGCompatibleRange(install: Installation): string {
+    if (install.version === "0.1" || install.version === "0.2") {
+        return "^1.4.0";
+    } else {
+        return "^1.4.0 || ^2.0.0";
     }
 }
