@@ -6,7 +6,7 @@ import { directoryExists } from "../utils/fs";
 import { DevelopmentInstallation, writeInstallInfo } from "../utils/installation";
 import { logger } from "../utils/log";
 import * as path from "path";
-import * as glob from "glob";
+import { globSync } from "glob";
 import { runNpmBuild, runNpmInstall } from "../utils/npm";
 
 type CloneRepository = "nodecg-io" | "nodecg-io-docs";
@@ -113,12 +113,7 @@ async function pullRepo(directory: string, repo: CloneRepository, url: string): 
  */
 async function deleteNodeModuleDirectories(nodecgIODir: string): Promise<void> {
     logger.debug("Deleting node_modules directories...");
-    const nodeModuleDirs = await new Promise<string[]>((resolve, reject) => {
-        glob(`${nodecgIODir}/**/node_modules`, {}, (err, matches) => {
-            if (err) reject(err);
-            else resolve(matches);
-        });
-    });
+    const nodeModuleDirs = globSync(`${nodecgIODir}/**/node_modules`);
 
     for (const nodeModuleDir of nodeModuleDirs) {
         if (await directoryExists(nodeModuleDir)) {
