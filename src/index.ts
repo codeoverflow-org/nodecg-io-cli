@@ -2,7 +2,7 @@ import yargs from "yargs";
 import { installModule } from "./install";
 import { uninstallModule } from "./uninstall";
 import { version } from "../package.json";
-import { checkForCliUpdate, ensureNode12 } from "./utils/cli";
+import { checkForCliUpdate, ensureMinimumNodeVersion } from "./utils/cli";
 import { generateModule } from "./generate";
 
 // This file gets imported by the index.js file of the repository root.
@@ -22,7 +22,7 @@ const args = yargs(process.argv.slice(2))
     })
     .parse();
 
-ensureNode12();
+ensureMinimumNodeVersion();
 (async () => {
     const opts = await args;
     if (!opts["disable-updates"]) {

@@ -1,10 +1,10 @@
 import { vol } from "memfs";
 import { uninstall } from "../../src/uninstall";
-import * as fsUtils from "../../src/utils/fs";
 import * as nodecgInstall from "../../src/utils/nodecgInstallation";
 import * as nodecgConfig from "../../src/utils/nodecgConfig";
 import { fsRoot } from "../test.util";
 import * as path from "path";
+import * as fs from "fs";
 
 jest.mock("fs", () => vol);
 afterEach(() => vol.reset());
@@ -13,18 +13,18 @@ const nodecgIODir = path.join(fsRoot, "nodecg-io");
 
 jest.spyOn(nodecgInstall, "findNodeCGDirectory").mockResolvedValue(fsRoot);
 const spyManageBundleDir = jest.spyOn(nodecgConfig, "manageBundleDir");
-const spyRemoveDirectory = jest.spyOn(fsUtils, "removeDirectory");
+const spyRm = jest.spyOn(fs.promises, "rm");
 
 afterEach(() => {
     spyManageBundleDir.mockClear();
-    spyRemoveDirectory.mockClear();
+    spyRm.mockClear();
 });
 
 describe("uninstall", () => {
     test("should not do anything if there is no nodecg-io directory", async () => {
         await uninstall();
 
-        expect(spyRemoveDirectory).not.toHaveBeenCalled();
+        expect(spyRm).not.toHaveBeenCalled();
         expect(spyManageBundleDir).not.toHaveBeenCalled();
     });
 
@@ -48,6 +48,6 @@ describe("uninstall", () => {
         await vol.promises.mkdir(nodecgIODir);
         await uninstall();
 
-        expect(spyRemoveDirectory).toHaveBeenCalledWith(nodecgIODir);
+        expect(spyRm).toHaveBeenCalledWith(nodecgIODir, { recursive: true, force: true });
     });
 });

@@ -60,7 +60,7 @@ The following table show which versions of the CLI are compatible with which nod
 | CLI versions | nodecg-io versions |
 | ------------ | ------------------ |
 | `0.1`        | `0.1`              |
-| `0.3`, `0.2` | `0.2`, `0.1`       |
+| `0.2-0.4`    | `0.2`, `0.1`       |
 
 ## Developer workflow
 

@@ -1,5 +1,5 @@
 import { vol } from "memfs";
-import { directoryExists, ensureDirectory, executeCommand, removeDirectory } from "../../src/utils/fs";
+import { directoryExists, ensureDirectory, executeCommand } from "../../src/utils/fs";
 import * as path from "path";
 import * as child_process from "child_process";
 import { testDir } from "../test.util";
@@ -37,24 +37,6 @@ describe("ensureDirectory", () => {
         await ensureDirectory(testDir);
         const s = await vol.promises.stat(testDir);
         expect(s.isDirectory()).toBe(true);
-    });
-});
-
-describe("removeDirectory", () => {
-    test("should remove directory recursively", async () => {
-        await vol.promises.mkdir(testDir);
-        await vol.promises.writeFile(path.join(testDir, "test.txt"), "abc");
-        await vol.promises.mkdir(path.join(testDir, "sub-dir"));
-
-        await removeDirectory(testDir);
-
-        // Directory should not be there anymore.
-        await expect(vol.promises.stat(testDir)).rejects.toThrow("no such file or directory");
-    });
-
-    test("should fail if directory does not exist", async () => {
-        // should fail because the directory does not exist
-        await expect(removeDirectory(testDir)).rejects.toThrow("no such file or directory");
     });
 });
 

@@ -42,20 +42,20 @@ export async function genExtension(opts: GenerationOptions, install: Installatio
     const writer = new CodeBlockWriter();
 
     // imports
-    genImport(writer, "requireService", opts.corePackage.name, opts.language);
+    genImport(writer, "requireService", opts.corePackage.name, opts.language, false);
 
     if (opts.language === "typescript") {
-        genImport(writer, "NodeCG", `${opts.nodeCGTypingsPackage}/types/server`, opts.language);
+        generateNodeCGImport(writer, opts, install);
+
         // Service import statements
         services.forEach((svc) => {
-            genImport(writer, svc.clientName, svc.packageName, opts.language);
+            genImport(writer, svc.clientName, svc.packageName, opts.language, false);
         });
     }
 
     // global nodecg function
     writer.blankLine();
-    const nodecgVariableType = opts.language === "typescript" ? ": NodeCG" : "";
-    writer.write(`module.exports = function (nodecg${nodecgVariableType}) `).block(() => {
+    writer.write(`module.exports = function (nodecg${getNodeCGType(opts, install)}) `).block(() => {
         genLog(writer, `${opts.bundleName} bundle started.`);
         writer.blankLine();
 
@@ -76,16 +76,66 @@ export async function genExtension(opts: GenerationOptions, install: Installatio
     await writeBundleFile(writer.toString(), opts.bundlePath, "extension", `index.${fileExtension}`);
 }
 
-function genImport(writer: CodeBlockWriter, symbolToImport: string, packageName: string, lang: CodeLanguage) {
+function genImport(
+    writer: CodeBlockWriter,
+    symbolToImport: string,
+    packageName: string,
+    lang: CodeLanguage,
+    isDefaultImport: boolean,
+) {
     if (lang === "typescript") {
-        writer.write(`import { ${symbolToImport} } from `).quote(packageName).write(";");
+        writer.write("import ");
+
+        if (!isDefaultImport) {
+            writer.write("{ ");
+        }
+        writer.write(symbolToImport);
+        if (!isDefaultImport) {
+            writer.write(" }");
+        }
+
+        writer.write(` from `).quote(packageName).write(";");
     } else if (lang === "javascript") {
-        writer.write(`const ${symbolToImport} = require(`).quote(packageName).write(`).${symbolToImport};`);
+        writer.write(`const ${symbolToImport} = require(`).quote(packageName).write(")");
+
+        if (!isDefaultImport) {
+            writer.write(`.${symbolToImport}`);
+        }
+
+        writer.write(";");
     } else {
         throw new Error("unsupported language: " + lang);
     }
 
     writer.write("\n");
+}
+
+export function determineNodeCGImportPath(opts: GenerationOptions, install: Installation): string {
+    if (install.version === "0.1") {
+        // nodecg-io 0.1 is only compatible with the NodeCG typings bundled inside the full nodecg package
+        return "nodecg/types/server";
+    } else if (install.version === "0.2" || opts.nodeCGVersion.major === 1) {
+        // nodecg-io 0.2 is only compatible with nodecg-types.
+        // Newer versions are compatible with both: nodecg-types (NodeCG v1) and @nodecg/types (NodeCG v2)
+        // There we check the current nodecg version to determine which import to use.
+        return "nodecg-types/types/server";
+    } else if (opts.nodeCGVersion.major === 2) {
+        // All versions from 0.3 and upwards support the official @nodecg/types package for NodeCG v2
+        return "@nodecg/types";
+    } else {
+        throw new Error(
+            "unable to determine nodecg typings import for nodecg " +
+                opts.nodeCGVersion +
+                " and nodecg-io " +
+                install.version,
+        );
+    }
+}
+
+function generateNodeCGImport(writer: CodeBlockWriter, opts: GenerationOptions, install: Installation) {
+    const importPath = determineNodeCGImportPath(opts, install);
+    const isDefaultImport = opts.nodeCGVersion.major === 2 && install.version !== "0.1" && install.version !== "0.2";
+    genImport(writer, "NodeCG", importPath, opts.language, isDefaultImport);
 }
 
 function genLog(writer: CodeBlockWriter, logMessage: string) {
@@ -120,4 +170,16 @@ function genOnUnavailableCall(writer: CodeBlockWriter, svc: ServiceNames) {
             genLog(writer, `${svc.name} has been unset.`);
         })
         .write(");");
+}
+
+function getNodeCGType(opts: GenerationOptions, install: Installation): string {
+    if (opts.language !== "typescript") {
+        return "";
+    }
+
+    if (install.version === "0.1" || install.version === "0.2" || opts.nodeCGVersion.major === 1) {
+        return ": NodeCG";
+    } else {
+        return ": NodeCG.ServerAPI";
+    }
 }

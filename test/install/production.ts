@@ -1,10 +1,18 @@
 import { vol } from "memfs";
 import * as path from "path";
+import * as fs from "fs";
 import { corePkg, dashboardPkg, nodecgIODir, twitchChatPkg, validProdInstall } from "../test.util";
-import { diffPackages, installPackages, removePackages, validateInstall } from "../../src/install/production";
+import {
+    checkNodeCGCompatibility,
+    diffPackages,
+    installPackages,
+    removePackages,
+    validateInstall,
+} from "../../src/install/production";
 import * as installation from "../../src/utils/installation";
 import * as fsUtils from "../../src/utils/fs";
 import * as npm from "../../src/utils/npm";
+import { SemVer } from "semver";
 
 jest.mock("fs", () => vol);
 beforeEach(() => vol.promises.mkdir(nodecgIODir));
@@ -18,6 +26,35 @@ const corePkg2 = {
     version: "0.2.0",
 };
 const packages = [corePkg, twitchChatPkg];
+
+describe("checkNodeCGCompatibility", () => {
+    const testCases: [string, number, boolean][] = [
+        ["0.1", 0, false],
+        ["0.1", 1, true],
+        ["0.1", 2, false],
+        ["0.2", 1, true],
+        ["0.2", 2, false],
+        ["0.3", 1, true],
+        ["0.3", 2, true],
+        ["development", 1, true],
+        ["development", 2, true],
+        ["development", 3, false],
+    ];
+
+    testCases.forEach(([version, nodecgVersion, shouldWork]) => {
+        test(`should ${shouldWork ? "allow" : "not allow"} installing ${version} with NodeCG v${nodecgVersion}`, () => {
+            const promise = checkNodeCGCompatibility(
+                { ...validProdInstall, version },
+                new SemVer(`v${nodecgVersion}.0.0`),
+            );
+            if (shouldWork) {
+                return expect(promise).resolves.toBeUndefined();
+            } else {
+                return expect(promise).rejects.toThrowError();
+            }
+        });
+    });
+});
 
 describe("diffPackages", () => {
     test("should return not already installed package in pkgInstall", () => {
@@ -56,13 +93,14 @@ describe("diffPackages", () => {
 
 describe("removePackages", () => {
     test("should rm each package directory", async () => {
-        const rmMock = jest.spyOn(fsUtils, "removeDirectory").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
         const i = { ...validProdInstall, packages: [...packages] };
         await removePackages(packages, i, nodecgIODir);
 
         expect(rmMock).toHaveBeenCalledTimes(2);
-        expect(rmMock).toHaveBeenCalledWith(path.join(nodecgIODir, corePkg.path));
-        expect(rmMock).toHaveBeenLastCalledWith(path.join(nodecgIODir, twitchChatPkg.path));
+        const rmOpts = { recursive: true, force: true };
+        expect(rmMock).toHaveBeenCalledWith(path.join(nodecgIODir, corePkg.path), rmOpts);
+        expect(rmMock).toHaveBeenLastCalledWith(path.join(nodecgIODir, twitchChatPkg.path), rmOpts);
         expect(i.packages.length).toBe(0);
     });
 
@@ -106,7 +144,7 @@ describe("installPackages", () => {
 
     test("should revert changes if npm install fails", async () => {
         npmInstallMock.mockRejectedValue(new Error("random error"));
-        const rmMock = jest.spyOn(fsUtils, "removeDirectory").mockClear().mockResolvedValue();
+        const rmMock = jest.spyOn(fs.promises, "rm").mockClear().mockResolvedValue();
 
         // should return the error
         await expect(installPackages(packages, createInstall(), nodecgIODir)).rejects.toThrow("random error");

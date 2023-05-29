@@ -5,6 +5,7 @@ import { genNodeCGDashboardConfig, genNodeCGGraphicConfig } from "./panel";
 import { SemVer } from "semver";
 import { writeBundleFile } from "./utils";
 import { Installation } from "../utils/installation";
+import { determineNodeCGImportPath } from "./extension";
 
 // Loaction where the development tarballs are hosted.
 export const developmentPublishRootUrl = "https://codeoverflow-org.github.io/nodecg-io-publish/";
@@ -28,7 +29,7 @@ export async function genPackageJson(opts: GenerationOptions, install: Installat
         version: opts.version.version,
         private: true,
         nodecg: {
-            compatibleRange: "^1.4.0",
+            compatibleRange: genNodeCGCompatibleRange(install),
             bundleDependencies: Object.fromEntries(opts.servicePackages.map((pkg) => [pkg.name, `^${pkg.version}`])),
             graphics: genNodeCGGraphicConfig(opts),
             dashboardPanels: genNodeCGDashboardConfig(opts),
@@ -54,7 +55,7 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
 
     if (opts.language === "typescript") {
         // For typescript we need core, all services (for typings) and special packages like ts itself or node typings.
-        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies(opts))];
+        const deps = [core, ...serviceDeps, ...(await genTypeScriptDependencies(opts, install))];
         deps.sort();
         return deps;
     } else {
@@ -66,14 +67,22 @@ async function genDependencies(opts: GenerationOptions, serviceDeps: Dependency[
 /**
  * Generates all extra dependencies that are needed when having a bundle in TS. Meaning typescript itself, nodecg for typings
  * and types for node.
- * @param nodecgDir the directory in which nodecg is installed. Used to get nodecg version which will be used by nodecg dependency.
+ * @return the dependencies that are needed for a TS bundle.
  */
-async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Dependency[]> {
-    logger.debug(
-        `Fetching latest ${opts.nodeCGTypingsPackage}, nodecg-io-tsconfig, typescript and @types/node versions...`,
-    );
-    const [nodecgVersion, latestTsConfig, latestTypeScript, latestNodeTypes] = await Promise.all([
-        getLatestPackageVersion(opts.nodeCGTypingsPackage),
+async function genTypeScriptDependencies(opts: GenerationOptions, install: Installation): Promise<Dependency[]> {
+    const nodecgTypingPackage = determineNodeCGImportPath(opts, install).replace("/types/server", "");
+    if (!nodecgTypingPackage) {
+        throw new Error("Could not determine nodecg typing package");
+    }
+
+    let nodecgTypingVersion = opts.nodeCGVersion;
+    if (nodecgTypingPackage === "nodecg-types") {
+        logger.debug(`Fetching latest nodecg-types version...`);
+        nodecgTypingVersion = await getLatestPackageVersion("nodecg-types");
+    }
+
+    logger.debug(`Fetching latest nodecg-io-tsconfig, typescript and @types/node versions...`);
+    const [latestTsConfig, latestTypeScript, latestNodeTypes] = await Promise.all([
         getLatestPackageVersion("nodecg-io-tsconfig"),
         getLatestPackageVersion("typescript"),
         getLatestPackageVersion("@types/node"),
@@ -81,7 +90,7 @@ async function genTypeScriptDependencies(opts: GenerationOptions): Promise<Depen
 
     return [
         ["@types/node", `^${latestNodeTypes}`],
-        [opts.nodeCGTypingsPackage, `^${nodecgVersion}`],
+        [nodecgTypingPackage, `^${nodecgTypingVersion}`],
         ["nodecg-io-tsconfig", `^${latestTsConfig}`],
         ["typescript", `^${latestTypeScript}`],
     ];
@@ -116,5 +125,18 @@ function getNodecgIODependency(packageName: string, version: string | SemVer, in
         return [packageName, `${developmentPublishRootUrl}${packageName}-${version}.tgz`];
     } else {
         return [packageName, `^${version}`];
+    }
+}
+
+/**
+ * Generates the range of nodecg versions that are compatible with the currently used nodecg-io version.
+ * @param install the nodecg-io installation, used to get the version
+ * @returns the semver range of compatible nodecg versions
+ */
+function genNodeCGCompatibleRange(install: Installation): string {
+    if (install.version === "0.1" || install.version === "0.2") {
+        return "^1.4.0";
+    } else {
+        return "^1.4.0 || ^2.0.0";
     }
 }
