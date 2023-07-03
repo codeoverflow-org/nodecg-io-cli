@@ -67,7 +67,7 @@
         "inquirer": "^8.2.0",
         "isomorphic-git": "^1.24.0",
         "semver": "^7.5.0",
-        "tar-fs": "^2.1.1",
+        "tar-fs": "^3.0.4",
         "yargs": "^17.2.1"
     }
 }
