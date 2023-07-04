@@ -15,7 +15,9 @@ const altFetchResult: git.FetchResult = {
     fetchHead: "e0c9035898dd52fc65c41454cec9c4d2611bfb37",
 };
 
-const cloneSpy = jest.spyOn(git, "clone").mockImplementation((opts) => vol.promises.mkdir(opts.dir));
+const cloneSpy = jest.spyOn(git, "clone").mockImplementation(async (opts) => {
+    await vol.promises.mkdir(opts.dir);
+});
 const fetchSpy = jest.spyOn(git, "fetch").mockResolvedValue(defaultFetchResult);
 const mergeSpy = jest.spyOn(git, "merge").mockResolvedValue({});
 const checkoutSpy = jest.spyOn(git, "checkout").mockResolvedValue();
