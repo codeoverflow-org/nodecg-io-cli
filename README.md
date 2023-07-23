@@ -57,10 +57,11 @@ This CLI follows and is versioned independently of the rest of nodecg-io like `n
 
 The following table show which versions of the CLI are compatible with which nodecg-io versions:
 
-| CLI versions | nodecg-io versions |
-| ------------ | ------------------ |
-| `0.1`        | `0.1`              |
-| `0.2-0.4`    | `0.2`, `0.1`       |
+| CLI versions | nodecg-io versions  |
+| ------------ | ------------------- |
+| `0.1`        | `0.1`               |
+| `0.2-0.4`    | `0.2`, `0.1`        |
+| `0.5`        | `0.3`, `0.2`, `0.1` |
 
 ## Developer workflow
 

@@ -30,8 +30,8 @@ jobs:
             fail-fast: false
             matrix:
                 os: [ubuntu-latest, windows-2019]
-                version: ["0.1", "0.2", "development"]
-                node: [14, 18]
+                version: ["0.1", "0.2", "0.3", "development"]
+                node: [14, 20]
 
         runs-on: ${{ matrix.os }}
         steps:
