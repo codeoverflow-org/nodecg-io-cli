@@ -131,8 +131,23 @@ describe("genPackageJson", () => {
         expect(deps["nodecg-types"]).toBe("^1.2.3");
     });
 
-    // TODO: seperate in 0.3 and dev once 0.3 has been released and added
     test("should use nodecg-types for 0.3 or higher/dev if NodeCG v1", async () => {
+        const opts = {
+            ...defaultOpts,
+            nodeCGVersion: new SemVer("1.9.0"),
+        };
+        const deps = (
+            await genPackageJSON(opts, {
+                ...validProdInstall,
+                version: "0.3",
+            })
+        )["dependencies"];
+
+        // These dependencies should always have the latest version which is fetched by the mocked getLatestPackageVersion
+        expect(deps["nodecg-types"]).toBe("^1.2.3");
+    });
+
+    test("should use nodecg-types for dev if NodeCG v1", async () => {
         const opts = {
             ...defaultOpts,
             nodeCGVersion: new SemVer("1.9.0"),

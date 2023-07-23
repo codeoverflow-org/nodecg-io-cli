@@ -63,11 +63,19 @@ const version02Services = {
     youtube: undefined,
 };
 
-export const supportedNodeCGIORange = new semver.Range("<=0.2");
+const version03Services = {
+    ...version02Services,
+    curseforge: undefined,
+    opentts: "OpenTTSClient",
+    "google-cast": "GoogleCastClient",
+};
+
+export const supportedNodeCGIORange = new semver.Range("<=0.3");
 
 export const versionServiceMap: Record<string, Record<string, string | undefined>> = {
     "0.1": version01Services,
     "0.2": version02Services,
+    "0.3": version03Services,
 };
 
 /**
